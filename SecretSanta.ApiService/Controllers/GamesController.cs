@@ -1,43 +1,16 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SecretSanta.ApiService.DTOs;
 
 namespace SecretSanta.ApiService.Controllers
 {
-    public class GameDto
-    {
-        public int GameId { get; set; }
-        public string Name { get; set; } = null!;
-        public DateTime CreatedAt { get; set; }
-        public bool IsDrawn { get; set; }
-        public int ParticipantCount { get; set; }
-        public int GiftCost { get; set; }
-    }
-
-    public class GameListDto
-    {
-        public int GameId { get; set; }
-        public string Name { get; set; } = null!;
-        public DateTime CreatedAt { get; set; }
-        public bool IsDrawn { get; set; }
-        public bool IsAnonymous { get; set; }
-        public int CreatorId { get; set; }
-        public int GiftCost { get; set; }
-        public List<string> Participants { get; set; } = new();
-    }
-    public class CreateGameRequest
-    {
-        public string Name { get; set; } = null!;
-        public int GiftCost { get; set; }
-    }
-
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // Требуется авторизация
-    public class GamesController : ControllerBase
+    [Authorize]
+    public class GamesController(AppDbContext db) : ControllerBase
     {
-        private readonly AppDbContext _db;
-        public GamesController(AppDbContext db) => _db = db;
+        private readonly AppDbContext _db = db;
 
         // Создать игру
         [HttpPost]
@@ -175,7 +148,6 @@ namespace SecretSanta.ApiService.Controllers
                 await _db.SaveChangesAsync();
             }
 
-            // Возвращаем только токен, фронтенд сам строит ссылку
             return Ok(new { InviteToken = invite.Token });
         }
     }

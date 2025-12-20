@@ -2,17 +2,15 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SecretSanta.ApiService;
+using SecretSanta.ApiService.Services;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add service defaults & Aspire client integrations.
 builder.AddServiceDefaults();
 
-// Add services to the container.
 builder.Services.AddProblemDetails();
 
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -39,10 +37,8 @@ builder.Services.AddAuthentication("Bearer")
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<JwtService>();
 
-// Контроллеры
 builder.Services.AddControllers();
 
-// Swagger / OpenAPI
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -55,7 +51,7 @@ app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    app.UseSwagger();       // JSON спецификация
+    app.UseSwagger();     
     app.UseSwaggerUI();
 }
 

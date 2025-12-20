@@ -1,23 +1,16 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SecretSanta.ApiService.DTOs;
 
-namespace SecretSanta.ApiService
+namespace SecretSanta.ApiService.Controllers
 {
-    public class UserGiftDto
-    {
-        public int UserGiftId { get; set; }
-        public string GiftName { get; set; } = null!;
-        public string DeliveryMethod { get; set; } = null!;
-    }
-
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class GiftsController : ControllerBase
+    public class GiftsController(AppDbContext db) : ControllerBase
     {
-        private readonly AppDbContext _db;
-        public GiftsController(AppDbContext db) => _db = db;
+        private readonly AppDbContext _db = db;
 
         [HttpPost("{gameId}/gifts")]
         public async Task<IActionResult> AddGift(int gameId, [FromBody] UserGiftDto dto)

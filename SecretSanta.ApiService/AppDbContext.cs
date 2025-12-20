@@ -6,10 +6,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SecretSanta.ApiService
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
         public DbSet<User> Users { get; set; }
         public DbSet<Game> Games { get; set; }
         public DbSet<UserGame> UserGames { get; set; }
@@ -26,20 +24,14 @@ namespace SecretSanta.ApiService
     {
         [Key]
         public int GameId { get; set; }
-
         [Required]
         public string Name { get; set; } = null!;
-
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
         public bool IsDrawn { get; set; } = false;
-
-        public int CreatorId { get; set; }             // добавили
+        public int CreatorId { get; set; }
         public int GiftCost { get; set; }
-        public User Creator { get; set; } = null!;     // навигация (опционально)
-
+        public User Creator { get; set; } = null!;
         public ICollection<UserGame> UserGames { get; set; } = new List<UserGame>();
-
         public List<GameInvite> Invites { get; set; } = new();
     }
     public class UserGift
@@ -59,19 +51,12 @@ namespace SecretSanta.ApiService
     {
         [Key]
         public int UserId { get; set; }
-
         [Required]
         public string DisplayName { get; set; } = null!;
-
         public string? RealName { get; set; }
-
         public string? Email { get; set; }
-
         public bool IsAnonymous { get; set; } = true;
-
-        // Новый
         public string? PasswordHash { get; set; }
-
         public ICollection<UserGame> UserGames { get; set; } = new List<UserGame>();
         public ICollection<Wish> Wishes { get; set; } = new List<Wish>();
     }
@@ -90,10 +75,8 @@ namespace SecretSanta.ApiService
     {
         [Key]
         public int DeliveryPointId { get; set; }
-
         [Required]
         public string Code { get; set; } = null!;
-
         public string? Description { get; set; }
     }
 
@@ -101,15 +84,11 @@ namespace SecretSanta.ApiService
     {
         [Key]
         public int WishId { get; set; }
-
         [Required]
         public int UserId { get; set; }
-
         [Required]
         public string WishText { get; set; } = null!;
-
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
         [ForeignKey("UserId")]
         public User? User { get; set; }
     }
@@ -118,22 +97,16 @@ namespace SecretSanta.ApiService
     {
         [Key]
         public int AssignmentId { get; set; }
-
         [Required]
         public int GiverUserId { get; set; }
-
         [Required]
         public int ReceiverUserId { get; set; }
-
         public int GameId { get; set; }
         public int? SelectedGiftId { get; set; }
         public UserGift? SelectedGift { get; set; }
-
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
         [ForeignKey("GiverUserId")]
         public User? Giver { get; set; }
-
         [ForeignKey("ReceiverUserId")]
         public User? Receiver { get; set; }
     }
@@ -142,15 +115,11 @@ namespace SecretSanta.ApiService
     {
         [Key]
         public int CodeId { get; set; }
-
         [Required]
         public int UserId { get; set; }
-
         [Required]
         public string AccessCode { get; set; } = null!;
-
         public DateTime? ExpiresAt { get; set; }
-
         [ForeignKey("UserId")]
         public User? User { get; set; }
     }
@@ -162,8 +131,6 @@ namespace SecretSanta.ApiService
         public int GameId { get; set; }
         public string Token { get; set; } = null!;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        // ---- Навигационное свойство ----
         public Game Game { get; set; } = null!;
     }
 

@@ -1,4 +1,4 @@
-﻿namespace SecretSanta.ApiService
+﻿namespace SecretSanta.ApiService.Services
 {
     using Microsoft.Extensions.Configuration;
     using Microsoft.IdentityModel.Tokens;
@@ -6,14 +6,9 @@
     using System.Security.Claims;
     using System.Text;
 
-    public class JwtService
+    public class JwtService(IConfiguration config)
     {
-        private readonly IConfiguration _config;
-
-        public JwtService(IConfiguration config)
-        {
-            _config = config;
-        }
+        private readonly IConfiguration _config = config;
 
         public string GenerateToken(int userId, string displayName)
         {

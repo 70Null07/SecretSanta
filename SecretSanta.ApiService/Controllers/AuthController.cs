@@ -1,51 +1,19 @@
-﻿namespace SecretSanta.ApiService.Controllers
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SecretSanta.ApiService.DTOs;
+using SecretSanta.ApiService.Services;
+
+namespace SecretSanta.ApiService.Controllers
 {
-    using Microsoft.AspNetCore.Authorization;
-    using Microsoft.AspNetCore.Identity;
-    using Microsoft.AspNetCore.Mvc;
-    using Microsoft.EntityFrameworkCore;
-    using System.ComponentModel.DataAnnotations;
-
-
-    public class RegisterRequest
-    {
-        [Required] public string DisplayName { get; set; } = null!;
-        public string? RealName { get; set; }
-        [EmailAddress] public string? Email { get; set; }
-
-        [Required] public string Password { get; set; } = null!;
-        public bool IsAnonymous { get; set; } = false;
-    }
-
-    public class LoginRequest
-    {
-        [Required] public string Identifier { get; set; } = null!;
-        // Identifier = email OR displayname (просто пример)
-        [Required] public string Password { get; set; } = null!;
-    }
-
-    public class UserDto
-    {
-        public int UserId { get; set; }
-        public string DisplayName { get; set; } = null!;
-        public string? Email { get; set; }
-    }
-
-
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    public class AuthController(AppDbContext db, IPasswordHasher<User> passwordHasher, JwtService jwt) : ControllerBase
     {
-        private readonly AppDbContext _db;
-        private readonly IPasswordHasher<User> _passwordHasher;
-        private readonly JwtService _jwt;
-
-        public AuthController(AppDbContext db, IPasswordHasher<User> passwordHasher, JwtService jwt)
-        {
-            _db = db;
-            _passwordHasher = passwordHasher;
-            _jwt = jwt;
-        }
+        private readonly AppDbContext _db = db;
+        private readonly IPasswordHasher<User> _passwordHasher = passwordHasher;
+        private readonly JwtService _jwt = jwt;
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest req)
@@ -100,7 +68,7 @@
             return Ok(new
             {
                 user = dto,
-                token = token
+                token
             });
         }
 

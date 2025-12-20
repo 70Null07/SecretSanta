@@ -5,33 +5,21 @@ namespace SecretSanta.ApiService.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AssignmentsController : ControllerBase
+    public class AssignmentsController(AppDbContext db) : ControllerBase
     {
-        private readonly AppDbContext _db;
-        public AssignmentsController(AppDbContext db) => _db = db;
-        public class UserGiftDto
+        private readonly AppDbContext _db = db;
+
+        public class UserGiftDto(string iGiftName, string iDeliv)
         {
             public int UserGiftId { get; set; }
-            public string GiftName { get; set; } = null!;
-            public string DeliveryMethod { get; set; } = null!;
-
-            public UserGiftDto(string iGiftName, string iDeliv)
-            {
-                GiftName = iGiftName;
-                DeliveryMethod = iDeliv;
-            }
+            public string GiftName { get; set; } = iGiftName;
+            public string DeliveryMethod { get; set; } = iDeliv;
         }
 
-        public class RecieverGiftDto
+        public class RecieverGiftDto(string recieverName, List<AssignmentsController.UserGiftDto> recieverGifts)
         {
-            public string RecieverName { get; set; }
-            public List<UserGiftDto> RecieverGifts { get; set; }
-
-            public RecieverGiftDto(string recieverName, List<UserGiftDto> recieverGifts)
-            {
-                RecieverName = recieverName;
-                RecieverGifts = recieverGifts;
-            }
+            public string RecieverName { get; set; } = recieverName;
+            public List<UserGiftDto> RecieverGifts { get; set; } = recieverGifts;
         }
 
         // Жеребьёвка для игры

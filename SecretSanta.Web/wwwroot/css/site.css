@@ -2,7 +2,6 @@
     background-color: rgba(255, 255, 255, 0.1);
     margin: 0;
     font-family: 'Inter', sans-serif;
-    /*background: linear-gradient(to bottom, #0b3d91, #061f4a);*/
     color: white;
 }
 
@@ -171,17 +170,17 @@
     padding: 3px;
     margin-top: 2px;
     border-radius: 5px;
-    display: block; /* важно */
+    display: block;
     color: black;
-    z-index: 101; /* больше, чем у .snowblock */
+    z-index: 101;
 }
 
 .header-bar {
     display: flex;
-    align-items: center; /* вертикальное выравнивание */
-    justify-content: space-between; /* левый блок — слева, правый — справа */
+    align-items: center;
+    justify-content: space-between;
     background-color: rgba(255, 255, 255, 0.1);
-    padding: 10px 20px; /* горизонтальные отступы */
+    padding: 10px 20px;
 }
 
     .header-bar .left {
@@ -217,38 +216,29 @@
     list-style-type: none;
     padding: 0;
     margin: 0;
-    /*display: flex;*/
-    /*flex-wrap: wrap;*/ /* Разрешаем перенос на следующую строку */
-    justify-content: space-between; /* Расстояние между элементами */
+    justify-content: space-between;
 }
 
 .games-li {
     --radius: 15px;
     --border-width: 6px;
-    /*display: flex;*/
-    /*justify-content: center;*/ /* Центрируем текст по горизонтали */
-    /*align-items: center;*/ /* Центрируем текст по вертикали */
     margin: 10px;
     padding: 15px 25px;
     position: relative;
     font-size: 16px;
     cursor: pointer;
     transition: transform .2s ease;
-    /*width: calc(33.33% - 20px);*/ /* Равномерное распределение элементов на 3 колонки */
-    /*height: 120px;*/ /* Фиксированная высота */
 }
 
-    /* Леденцовая рамка */
     .games-li::before {
         content: "";
         position: absolute;
         inset: 0;
         padding: var(--border-width);
         border-radius: var(--radius);
-        background: repeating-linear-gradient( 45deg, green 0 12px, /* ширина красной полосы */
-        blue 12px 24px /* ширина синей полосы */
+        background: repeating-linear-gradient( 45deg, green 0 12px,
+        blue 12px 24px
         );
-        /* Маска для корректного отображения рамки */
         -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
         -webkit-mask-composite: xor;
         mask-composite: exclude;
@@ -256,7 +246,6 @@
         pointer-events: none;
     }
 
-/* Внутренний белый фон */
 .games-li {
     background: white;
     border-radius: var(--radius);

@@ -5,10 +5,9 @@ namespace SecretSanta.ApiService.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class UsersController : ControllerBase
+    public class UsersController(AppDbContext db) : ControllerBase
     {
-        private readonly AppDbContext _db;
-        public UsersController(AppDbContext db) => _db = db;
+        private readonly AppDbContext _db = db;
 
         // Регистрация пользователя
         [HttpPost("register")]

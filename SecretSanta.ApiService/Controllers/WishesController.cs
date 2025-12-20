@@ -5,10 +5,9 @@ namespace SecretSanta.ApiService.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class WishesController : ControllerBase
+    public class WishesController(AppDbContext db) : ControllerBase
     {
-        private readonly AppDbContext _db;
-        public WishesController(AppDbContext db) => _db = db;
+        private readonly AppDbContext _db = db;
 
         [HttpPost]
         public async Task<IActionResult> AddWish([FromBody] Wish wish)
