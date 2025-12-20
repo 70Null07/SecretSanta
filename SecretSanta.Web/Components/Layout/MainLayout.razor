@@ -1,0 +1,259 @@
+﻿@inherits LayoutComponentBase
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<div class="container">
+    <div class="header-bar">
+        <div class="left">🎅 Тайный Санта</div>
+        <div class="center">
+            <NavLink href="/" class="nav-item" Match="NavLinkMatch.All">Главная</NavLink>
+            <NavLink href="/mygames" class="nav-item">Мои игры</NavLink>
+        </div>
+        <div class="right">
+            @if (isLoggedIn)
+            {
+                <span>👤 @currentUserName</span>
+                <button @onclick="LogoutAsync">Выйти</button>
+            }
+            else
+            {
+                <button @onclick="ToggleAuthModal">Войти</button>
+            }
+        </div>
+    </div>
+</div>
+
+@if (showAuthModal)
+{
+    <div class="modal-backdrop" @onclick="ToggleAuthModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <h3>Авторизация / Регистрация</h3>
+            <div>
+                <label>
+                    Логин:
+                </label>
+                <input @bind="loginName" />
+            </div> <div>
+                <label>
+                    Пароль:
+                </label>
+                <input type="password" @bind="password" />
+            </div>
+            <div style="margin-top:10px">
+                <button class="blue-button" @onclick="LoginAsync">Войти</button>
+                <button class="blue-button" @onclick="RegisterAsync">Зарегистрироваться</button>
+            </div>
+        </div>
+    </div>
+}
+
+<main>
+    @Body
+</main>
+
+@code 
+{
+    public class LoginRequest
+    {
+        public string Identifier { get; set; }
+        public string Password { get; set; }
+    }
+
+    public class RegisterRequest
+    {
+        public string DisplayName { get; set; }
+        public string? RealName { get; set; }
+        public string? Email { get; set; }
+        public string Password { get; set; }
+    }
+
+    public class UserDto
+    {
+        public int UserId { get; set; }
+        public string DisplayName { get; set; } = null!;
+        public string? Email { get; set; }
+    }
+
+    private bool showAuthModal = false;
+    private string loginName;
+    private string password;
+    private void ToggleAuthModal() => showAuthModal = !showAuthModal;
+    public bool isLoggedIn = false;
+    public string currentUserName = string.Empty;
+
+    [Inject] IHttpClientFactory ClientFactory { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                var client = ClientFactory.CreateClient("api");
+                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                try
+                {
+                    // Проверяем валидность токена
+                    var response = await client.GetAsync("http://apiservice/api/auth/validate");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        currentUserName = await JS.InvokeAsync<string>("localStorage.getItem", "username");
+                        isLoggedIn = true;
+                    }
+                    else
+                    {
+                        await DeauthorizeUser();
+                    }
+                }
+                catch
+                {
+                    await DeauthorizeUser();
+                }
+
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task DeauthorizeUser()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.removeItem", "authToken");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "username");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "userId");
+        } 
+        catch (Exception) {}
+
+        isLoggedIn = false;
+        currentUserName = string.Empty;
+        StateHasChanged();
+
+        Nav.NavigateTo(Nav.Uri, forceLoad: true);
+    }
+
+    private async Task LogoutAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.removeItem", "authToken");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "username");
+            await JS.InvokeVoidAsync("localStorage.removeItem", "userId");
+        }
+        catch (Exception) { }
+
+        isLoggedIn = false;
+        currentUserName = string.Empty;
+
+        StateHasChanged();
+
+        Nav.NavigateTo(Nav.Uri, forceLoad: true);
+    }
+
+    private async Task LoginAsync()
+    {
+        var client = ClientFactory.CreateClient("api");
+
+        var req = new LoginRequest
+        {
+            Identifier = loginName,
+            Password = password
+        };
+
+        var response = await client.PostAsJsonAsync("http://apiservice/api/auth/login", req);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var result = await response.Content.ReadFromJsonAsync<LoginResult>();
+
+            // Сохраняем токен в browser localStorage
+            try
+            {
+                await JS.InvokeVoidAsync("localStorage.setItem", "authToken", result.Token);
+                await JS.InvokeVoidAsync("localStorage.setItem", "username", result.User.DisplayName);
+                await JS.InvokeVoidAsync("localStorage.setItem", "userId", result.User.UserId.ToString());
+            }
+            catch (Exception) { }
+
+            currentUserName = result.User.DisplayName;
+            isLoggedIn = true;
+
+            showAuthModal = false;
+
+            Nav.NavigateTo(Nav.Uri, forceLoad: true);
+        }
+        else
+        {
+            try
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Возникла проблема: {error}");
+            }
+            catch (Exception) { }
+        }
+    }
+
+    public class LoginResult
+    {
+        public UserDto User { get; set; }
+        public string Token { get; set; }
+    }
+
+
+    private async Task RegisterAsync()
+    {
+        var client = ClientFactory.CreateClient("api");
+
+        var req = new RegisterRequest
+        {
+            DisplayName = loginName,
+            Password = password,
+            Email = null,
+            RealName = null
+        };
+
+        var response = await client.PostAsJsonAsync("http://apiservice/api/auth/register", req);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var loginReq = new LoginRequest
+            {
+                Identifier = loginName,
+                Password = password
+            };
+
+            var loginResponse = await client.PostAsJsonAsync("http://apiservice/api/auth/login", loginReq);
+            if (loginResponse.IsSuccessStatusCode)
+            {
+                var result = await loginResponse.Content.ReadFromJsonAsync<LoginResult>();
+                try
+                {
+                    await JS.InvokeVoidAsync("localStorage.setItem", "authToken", result.Token);
+                    await JS.InvokeVoidAsync("localStorage.setItem", "username", result.User.DisplayName);
+                    await JS.InvokeVoidAsync("localStorage.setItem", "userId", result.User.UserId.ToString());
+                }
+                catch (Exception) { }
+
+                currentUserName = result.User.DisplayName;
+                isLoggedIn = true;
+
+                showAuthModal = false;
+
+                Nav.NavigateTo(Nav.Uri, forceLoad: true);
+            }
+        }
+        else
+        {
+            try
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Возникла проблема: {error}");
+            }
+            catch (Exception) {}
+        }
+    }
+}
