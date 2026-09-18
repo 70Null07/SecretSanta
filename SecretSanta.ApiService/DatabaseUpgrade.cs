@@ -14,8 +14,28 @@ public static class DatabaseUpgrade
         // EnsureCreated databases do not have migration history, so this explicit upgrade keeps
         // them compatible while fresh databases still receive the indexes from the EF model.
         await dbContext.Database.ExecuteSqlRawAsync(
-            "SELECT pg_advisory_xact_lock(hashtext('SecretSanta.AssignmentConstraints'));",
+            "SELECT pg_advisory_xact_lock(hashtext('SecretSanta.DatabaseConstraints'));",
             cancellationToken);
+
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "NormalizedDisplayName" text;
+            ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "NormalizedEmail" text;
+            """,
+            cancellationToken);
+
+        // Use exactly the same .NET normalization for existing data as for new requests;
+        // PostgreSQL upper()/collations are deliberately not part of login semantics.
+        var users = await dbContext.Users.ToListAsync(cancellationToken);
+        foreach (var user in users)
+        {
+            user.NormalizedDisplayName = LoginIdentifier.Normalize(user.DisplayName);
+            user.NormalizedEmail = LoginIdentifier.NormalizeOptional(user.Email);
+        }
+
+        ThrowIfLoginIdentifierConflictsExist(users);
+
+        await dbContext.SaveChangesAsync(cancellationToken);
 
         await dbContext.Database.ExecuteSqlRawAsync(
             """
@@ -42,9 +62,54 @@ public static class DatabaseUpgrade
 
             CREATE UNIQUE INDEX IF NOT EXISTS "IX_SantaAssignments_GameId_ReceiverUserId"
             ON "SantaAssignments" ("GameId", "ReceiverUserId");
+
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_Users_NormalizedDisplayName"
+            ON "Users" ("NormalizedDisplayName");
+
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_Users_NormalizedEmail"
+            ON "Users" ("NormalizedEmail")
+            WHERE "NormalizedEmail" IS NOT NULL AND "NormalizedEmail" <> '';
+
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_GameInvites_Token"
+            ON "GameInvites" ("Token");
+
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_GameInvites_GameId"
+            ON "GameInvites" ("GameId");
+
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_DeliveryPoints_Code"
+            ON "DeliveryPoints" ("Code");
+
+            ALTER TABLE "Users" ALTER COLUMN "NormalizedDisplayName" SET NOT NULL;
             """,
             cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
+    }
+
+    private static void ThrowIfLoginIdentifierConflictsExist(IReadOnlyCollection<User> users)
+    {
+        var conflicts = users
+            .GroupBy(user => user.NormalizedDisplayName, StringComparer.Ordinal)
+            .Where(group => group.Count() > 1)
+            .Select(group => (Identifier: "display name", UserIds: group.Select(user => user.UserId)))
+            .Concat(users
+                .Where(user => !string.IsNullOrEmpty(user.NormalizedEmail))
+                .GroupBy(user => user.NormalizedEmail!, StringComparer.Ordinal)
+                .Where(group => group.Count() > 1)
+                .Select(group => (Identifier: "email", UserIds: group.Select(user => user.UserId))))
+            .Select(conflict =>
+                $"{conflict.Identifier} is shared by user IDs [{string.Join(", ", conflict.UserIds)}]")
+            .ToList();
+
+        if (conflicts.Count == 0)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            "Cannot create case-insensitive unique login identifier indexes because existing " +
+            "users have conflicting identifiers after trimming and case normalization. " +
+            "Update the listed users so every display name and non-empty email is unique, then restart the service. " +
+            string.Join("; ", conflicts));
     }
 }

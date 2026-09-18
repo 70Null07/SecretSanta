@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using SecretSanta.ApiService.DTOs;
 using SecretSanta.ApiService.Services;
 
@@ -20,12 +21,19 @@ namespace SecretSanta.ApiService.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var existsName = await _db.Users.AnyAsync(u => u.DisplayName == req.DisplayName);
+            var normalizedName = LoginIdentifier.Normalize(req.DisplayName);
+            var normalizedEmail = LoginIdentifier.NormalizeOptional(req.Email);
+            var existsName = await _db.Users.AnyAsync(u => u.NormalizedDisplayName == normalizedName);
             if (existsName) return BadRequest("Имя уже занято");
+
+            if (normalizedEmail != null &&
+                await _db.Users.AnyAsync(u => u.NormalizedEmail == normalizedEmail))
+                return BadRequest("Email уже используется");
 
             var user = new User
             {
                 DisplayName = req.DisplayName,
+                NormalizedDisplayName = normalizedName,
                 RealName = req.RealName,
                 Email = req.Email,
                 IsAnonymous = req.IsAnonymous
@@ -34,19 +42,33 @@ namespace SecretSanta.ApiService.Controllers
             user.PasswordHash = _passwordHasher.HashPassword(user, req.Password);
 
             _db.Users.Add(user);
-            await _db.SaveChangesAsync();
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateException exception) when (IsUniqueViolation(exception))
+            {
+                // A concurrent registration may win after the checks above. Never expose
+                // provider exception details or constraint names to the client.
+                return Conflict("Имя или email уже используются");
+            }
 
             var dto = new UserDto { UserId = user.UserId, DisplayName = user.DisplayName, Email = user.Email };
             return Ok(dto);
         }
+
+        private static bool IsUniqueViolation(DbUpdateException exception) =>
+            exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest req)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
+            var normalizedIdentifier = LoginIdentifier.Normalize(req.Identifier);
             var user = await _db.Users
-                .Where(u => (u.Email != null && u.Email == req.Identifier) || u.DisplayName == req.Identifier)
+                .Where(u => u.NormalizedEmail == normalizedIdentifier ||
+                            u.NormalizedDisplayName == normalizedIdentifier)
                 .FirstOrDefaultAsync();
 
             if (user == null)

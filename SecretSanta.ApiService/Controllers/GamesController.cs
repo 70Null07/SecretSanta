@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using SecretSanta.ApiService.DTOs;
 
 namespace SecretSanta.ApiService.Controllers
@@ -139,7 +140,7 @@ namespace SecretSanta.ApiService.Controllers
             if (game.CreatorId != userId)
                 return Forbid();
 
-            var invite = _db.GameInvites.FirstOrDefault(i => i.GameId == gameId);
+            var invite = await _db.GameInvites.FirstOrDefaultAsync(i => i.GameId == gameId);
 
             if (invite == null)
             {
@@ -150,10 +151,25 @@ namespace SecretSanta.ApiService.Controllers
                 };
 
                 _db.GameInvites.Add(invite);
-                await _db.SaveChangesAsync();
+                try
+                {
+                    await _db.SaveChangesAsync();
+                }
+                catch (DbUpdateException exception) when (IsUniqueViolation(exception))
+                {
+                    // Another request can create the game's invite first. Detach the failed
+                    // insert and return the winner without leaking database diagnostics.
+                    _db.Entry(invite).State = EntityState.Detached;
+                    invite = await _db.GameInvites.FirstOrDefaultAsync(i => i.GameId == gameId);
+                    if (invite == null)
+                        return Conflict("Не удалось создать приглашение");
+                }
             }
 
             return Ok(new { InviteToken = invite.Token });
         }
+
+        private static bool IsUniqueViolation(DbUpdateException exception) =>
+            exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
     }
 }

@@ -22,6 +22,29 @@ namespace SecretSanta.ApiService
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<User>()
+                .HasIndex(user => user.NormalizedDisplayName)
+                .IsUnique();
+
+            modelBuilder.Entity<User>()
+                .HasIndex(user => user.NormalizedEmail)
+                .IsUnique()
+                .HasFilter("\"NormalizedEmail\" IS NOT NULL AND \"NormalizedEmail\" <> ''");
+
+            modelBuilder.Entity<GameInvite>()
+                .HasIndex(invite => invite.Token)
+                .IsUnique();
+
+            // CreateInvite returns one stable invite per game. The primary key does not
+            // protect that invariant when requests race.
+            modelBuilder.Entity<GameInvite>()
+                .HasIndex(invite => invite.GameId)
+                .IsUnique();
+
+            modelBuilder.Entity<DeliveryPoint>()
+                .HasIndex(point => point.Code)
+                .IsUnique();
+
             modelBuilder.Entity<SantaAssignment>()
                 .HasIndex(assignment => new { assignment.GameId, assignment.GiverUserId })
                 .IsUnique();
@@ -29,6 +52,30 @@ namespace SecretSanta.ApiService
             modelBuilder.Entity<SantaAssignment>()
                 .HasIndex(assignment => new { assignment.GameId, assignment.ReceiverUserId })
                 .IsUnique();
+        }
+
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            NormalizeLoginIdentifiers();
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        public override Task<int> SaveChangesAsync(
+            bool acceptAllChangesOnSuccess,
+            CancellationToken cancellationToken = default)
+        {
+            NormalizeLoginIdentifiers();
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+
+        private void NormalizeLoginIdentifiers()
+        {
+            foreach (var entry in ChangeTracker.Entries<User>()
+                         .Where(entry => entry.State is EntityState.Added or EntityState.Modified))
+            {
+                entry.Entity.NormalizedDisplayName = LoginIdentifier.Normalize(entry.Entity.DisplayName);
+                entry.Entity.NormalizedEmail = LoginIdentifier.NormalizeOptional(entry.Entity.Email);
+            }
         }
 
     }
@@ -66,12 +113,23 @@ namespace SecretSanta.ApiService
         public int UserId { get; set; }
         [Required]
         public string DisplayName { get; set; } = null!;
+        [Required]
+        public string NormalizedDisplayName { get; set; } = null!;
         public string? RealName { get; set; }
         public string? Email { get; set; }
+        public string? NormalizedEmail { get; set; }
         public bool IsAnonymous { get; set; } = true;
         public string? PasswordHash { get; set; }
         public ICollection<UserGame> UserGames { get; set; } = new List<UserGame>();
         public ICollection<Wish> Wishes { get; set; } = new List<Wish>();
+    }
+
+    public static class LoginIdentifier
+    {
+        public static string Normalize(string value) => value.Trim().ToUpperInvariant();
+
+        public static string? NormalizeOptional(string? value) =>
+            string.IsNullOrWhiteSpace(value) ? null : Normalize(value);
     }
 
     [PrimaryKey(nameof(UserId), nameof(GameId))]
