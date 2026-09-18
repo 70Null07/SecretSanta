@@ -116,12 +116,15 @@ namespace SecretSanta.ApiService.Controllers
                 return Forbid();
 
             var assignment = await _db.SantaAssignments
-                .Include(a => a.Receiver)
-                .Include(a => a.SelectedGift)
                 .FirstOrDefaultAsync(a => a.GiverUserId == userId && a.GameId == gameId);
 
             if (assignment == null)
                 return NotFound();
+
+            var receiver = await _db.Users
+                .FirstOrDefaultAsync(user => user.UserId == assignment.ReceiverUserId);
+            if (receiver == null)
+                return NotFound("Получатель не найден");
 
             var wishes = await _db.UserGifts.Where(a => a.GameId == gameId && a.UserId == assignment.ReceiverUserId).ToListAsync();
 
@@ -132,7 +135,7 @@ namespace SecretSanta.ApiService.Controllers
                 wisheslist.Add(new UserGiftDto(w.GiftName, w.DeliveryMethod));
             }
 
-            var recievergifts = new RecieverGiftDto(assignment.Receiver!.DisplayName, wisheslist);
+            var recievergifts = new RecieverGiftDto(receiver.DisplayName, wisheslist);
 
             return Ok(recievergifts);
         }
