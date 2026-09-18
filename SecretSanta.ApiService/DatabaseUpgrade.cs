@@ -33,6 +33,8 @@ public static class DatabaseUpgrade
             user.NormalizedEmail = LoginIdentifier.NormalizeOptional(user.Email);
         }
 
+        ThrowIfLoginIdentifierConflictsExist(users);
+
         await dbContext.SaveChangesAsync(cancellationToken);
 
         await dbContext.Database.ExecuteSqlRawAsync(
@@ -82,5 +84,32 @@ public static class DatabaseUpgrade
             cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
+    }
+
+    private static void ThrowIfLoginIdentifierConflictsExist(IReadOnlyCollection<User> users)
+    {
+        var conflicts = users
+            .GroupBy(user => user.NormalizedDisplayName, StringComparer.Ordinal)
+            .Where(group => group.Count() > 1)
+            .Select(group => (Identifier: "display name", UserIds: group.Select(user => user.UserId)))
+            .Concat(users
+                .Where(user => !string.IsNullOrEmpty(user.NormalizedEmail))
+                .GroupBy(user => user.NormalizedEmail!, StringComparer.Ordinal)
+                .Where(group => group.Count() > 1)
+                .Select(group => (Identifier: "email", UserIds: group.Select(user => user.UserId))))
+            .Select(conflict =>
+                $"{conflict.Identifier} is shared by user IDs [{string.Join(", ", conflict.UserIds)}]")
+            .ToList();
+
+        if (conflicts.Count == 0)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            "Cannot create case-insensitive unique login identifier indexes because existing " +
+            "users have conflicting identifiers after trimming and case normalization. " +
+            "Update the listed users so every display name and non-empty email is unique, then restart the service. " +
+            string.Join("; ", conflicts));
     }
 }
