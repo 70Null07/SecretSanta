@@ -2,9 +2,13 @@ using Aspire.Hosting;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
+var database = builder.AddPostgres("postgres")
+    .AddDatabase("Default");
+
 var apiService = builder.AddProject<Projects.SecretSanta_ApiService>("apiservice")
-    .WithHttpHealthCheck("/health").WithEnvironment("ConnectionStrings__Default",
-        "Data Source=dmitr;Initial Catalog=SecretSanta;Integrated Security=True;Encrypt=False");
+    .WithHttpHealthCheck("/health")
+    .WithReference(database)
+    .WaitFor(database);
 
 builder.AddProject<Projects.SecretSanta_Web>("webfrontend")
     .WithExternalHttpEndpoints()

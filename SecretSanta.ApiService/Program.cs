@@ -13,8 +13,12 @@ builder.Services.AddProblemDetails();
 
 builder.Services.AddOpenApi();
 
+var connectionString = builder.Configuration.GetConnectionString("Default")
+    ?? throw new InvalidOperationException(
+        "Connection string 'Default' is not configured. Set ConnectionStrings__Default before starting the application.");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer("Data Source=dmitr;Initial Catalog=SecretSanta;Integrated Security=True;Encrypt=False"));
+    options.UseNpgsql(connectionString));
 
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
@@ -43,6 +47,12 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await dbContext.Database.EnsureCreatedAsync();
+}
 
 app.MapDefaultEndpoints();
 // Configure the HTTP request pipeline.
