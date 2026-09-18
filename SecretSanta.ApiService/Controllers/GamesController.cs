@@ -14,16 +14,19 @@ namespace SecretSanta.ApiService.Controllers
 
         // Создать игру
         [HttpPost]
-        public async Task<IActionResult> CreateGame([FromBody] CreateGameRequest req, [FromQuery] int creatorUserId)
+        public async Task<IActionResult> CreateGame([FromBody] CreateGameRequest req)
         {
+            if (!this.TryGetCurrentUserId(out var userId))
+                return Unauthorized();
+
             if (string.IsNullOrWhiteSpace(req.Name))
                 return BadRequest("Name is required");
 
-            var game = new Game { Name = req.Name, CreatorId = creatorUserId, GiftCost = req.GiftCost };
+            var game = new Game { Name = req.Name, CreatorId = userId, GiftCost = req.GiftCost };
             _db.Games.Add(game);
             await _db.SaveChangesAsync();
 
-            _db.UserGames.Add(new UserGame { GameId = game.GameId, UserId = creatorUserId });
+            _db.UserGames.Add(new UserGame { GameId = game.GameId, UserId = userId });
             await _db.SaveChangesAsync();
 
             var dto = new GameDto
@@ -44,7 +47,12 @@ namespace SecretSanta.ApiService.Controllers
         [HttpGet]
         public async Task<IActionResult> GetGames()
         {
-            var games = await _db.Games.Include(g => g.UserGames).ThenInclude(ug => ug.User).ToListAsync();
+            if (!this.TryGetCurrentUserId(out var userId))
+                return Unauthorized();
+
+            var games = await _db.Games
+                .Where(g => g.CreatorId == userId || g.UserGames.Any(ug => ug.UserId == userId))
+                .Include(g => g.UserGames).ThenInclude(ug => ug.User).ToListAsync();
 
             var dto = games.Select(g => new GameListDto
             {
@@ -60,9 +68,12 @@ namespace SecretSanta.ApiService.Controllers
         }
 
         // Получить игры конкретного пользователя
-        [HttpGet("user/{userId}")]
-        public async Task<IActionResult> GetUserGames(int userId)
+        [HttpGet("user")]
+        public async Task<IActionResult> GetUserGames()
         {
+            if (!this.TryGetCurrentUserId(out var userId))
+                return Unauthorized();
+
             var games = await _db.UserGames
                 .Where(ug => ug.UserId == userId)
                 .Include(ug => ug.Game)
@@ -89,11 +100,8 @@ namespace SecretSanta.ApiService.Controllers
         public async Task<IActionResult> JoinGame(string inviteToken)
         {
             // Получаем ID пользователя из токена (JWT)
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "uid");
-            if (userIdClaim == null)
+            if (!this.TryGetCurrentUserId(out var userId))
                 return Unauthorized();
-
-            int userId = int.Parse(userIdClaim.Value);
 
             // Ищем приглашение по токену
             var invite = await _db.GameInvites
@@ -122,11 +130,8 @@ namespace SecretSanta.ApiService.Controllers
         [HttpPost("{gameId}/invite")]
         public async Task<IActionResult> CreateInvite(int gameId)
         {
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "uid");
-            if (userIdClaim == null)
+            if (!this.TryGetCurrentUserId(out var userId))
                 return Unauthorized();
-
-            int userId = int.Parse(userIdClaim.Value);
 
             var game = await _db.Games.FindAsync(gameId);
             if (game == null) return NotFound();

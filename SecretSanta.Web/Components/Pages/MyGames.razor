@@ -369,7 +369,7 @@
             var client = ClientFactory.CreateClient("api");
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            var response = await client.GetFromJsonAsync<List<GameListDto>>($"http://apiservice/api/games/user/{userId}");
+            var response = await client.GetFromJsonAsync<List<GameListDto>>("http://apiservice/api/games/user");
             if (response != null)
                 games = response;
         }
@@ -389,7 +389,7 @@
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var content = JsonContent.Create(new CreateGameRequest { Name = newGameName, GiftCost = giftCost });
-        var response = await client.PostAsync($"http://apiservice/api/games?creatorUserId={userId}", content);
+        var response = await client.PostAsync("http://apiservice/api/games", content);
 
 
         if (response.IsSuccessStatusCode)
@@ -445,7 +445,7 @@
 
         try
         {
-            var result = await client.GetFromJsonAsync<RecieverGiftDto>($"http://apiservice/api/Assignments/giver/{gameId}/{userId}");
+            var result = await client.GetFromJsonAsync<RecieverGiftDto>($"http://apiservice/api/Assignments/giver/{gameId}");
             if (result != null)
             {
                 assgGifts = result;
@@ -554,4 +554,3 @@
         public string DeliveryMethod { get; set; } = string.Empty;
     }
 }
-

@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace SecretSanta.ApiService.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class AssignmentsController(AppDbContext db) : ControllerBase
     {
         private readonly AppDbContext _db = db;
@@ -26,16 +28,13 @@ namespace SecretSanta.ApiService.Controllers
         [HttpPost("draw/{gameId}")]
         public async Task<IActionResult> Draw(int gameId)
         {
+            if (!this.TryGetCurrentUserId(out var userId))
+                return Unauthorized();
+
             var game = await _db.Games.Include(g => g.UserGames).ThenInclude(ug => ug.User)
                                       .FirstOrDefaultAsync(g => g.GameId == gameId);
             if (game == null) return NotFound("Игра не найдена");
 
-
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "uid");
-            if (userIdClaim == null)
-                return Unauthorized();
-
-            int userId = int.Parse(userIdClaim.Value);
 
             // Проверяем создателя
             if (game.CreatorId != userId) return Forbid();
@@ -91,23 +90,26 @@ namespace SecretSanta.ApiService.Controllers
         }
 
         // Посмотреть кому дарить
-        [HttpGet("giver/{gameId}/{giverId}")]
-        public async Task<IActionResult> GetAssignment(int gameId, int giverId)
+        [HttpGet("giver/{gameId}")]
+        public async Task<IActionResult> GetAssignment(int gameId)
         {
+            if (!this.TryGetCurrentUserId(out var userId))
+                return Unauthorized();
+
+            var isParticipant = await _db.UserGames
+                .AnyAsync(ug => ug.GameId == gameId && ug.UserId == userId);
+            if (!isParticipant)
+                return Forbid();
+
             var assignment = await _db.SantaAssignments
                 .Include(a => a.Receiver)
                 .Include(a => a.SelectedGift)
-                .FirstOrDefaultAsync(a => a.GiverUserId == giverId && a.GameId == gameId);
+                .FirstOrDefaultAsync(a => a.GiverUserId == userId && a.GameId == gameId);
 
-            var assigmentWishes = await _db.SantaAssignments
-                .Include(a => a.Receiver)
-                .Include(a => a.SelectedGift)
-                .Where(a => a.GiverUserId == giverId && a.GameId == gameId)
-                .ToListAsync();
+            if (assignment == null)
+                return NotFound();
 
             var wishes = await _db.UserGifts.Where(a => a.GameId == gameId && a.UserId == assignment.ReceiverUserId).ToListAsync();
-
-            var uname = await _db.Users.Where(a => a.UserId == assignment.ReceiverUserId).FirstOrDefaultAsync();
 
             List<UserGiftDto> wisheslist = new();
 
@@ -116,10 +118,7 @@ namespace SecretSanta.ApiService.Controllers
                 wisheslist.Add(new UserGiftDto(w.GiftName, w.DeliveryMethod));
             }
 
-            var recievergifts = new RecieverGiftDto(uname.DisplayName, wisheslist);
-
-            if (assignment == null)
-                return NotFound();
+            var recievergifts = new RecieverGiftDto(assignment.Receiver!.DisplayName, wisheslist);
 
             return Ok(recievergifts);
         }
