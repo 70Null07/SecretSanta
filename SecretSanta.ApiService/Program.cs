@@ -48,6 +48,12 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await dbContext.Database.EnsureCreatedAsync();
+}
+
 app.MapDefaultEndpoints();
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
