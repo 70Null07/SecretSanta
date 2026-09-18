@@ -52,6 +52,7 @@ await using (var scope = app.Services.CreateAsyncScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await dbContext.Database.EnsureCreatedAsync();
+    await dbContext.ApplyAssignmentConstraintsAsync();
 }
 
 app.MapDefaultEndpoints();

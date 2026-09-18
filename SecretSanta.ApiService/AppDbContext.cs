@@ -18,6 +18,19 @@ namespace SecretSanta.ApiService
         public DbSet<GameInvite> GameInvites { get; set; }
         public DbSet<UserGift> UserGifts { get; set; }
 
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<SantaAssignment>()
+                .HasIndex(assignment => new { assignment.GameId, assignment.GiverUserId })
+                .IsUnique();
+
+            modelBuilder.Entity<SantaAssignment>()
+                .HasIndex(assignment => new { assignment.GameId, assignment.ReceiverUserId })
+                .IsUnique();
+        }
+
     }
 
     public class Game
