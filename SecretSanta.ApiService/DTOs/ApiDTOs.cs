@@ -57,4 +57,10 @@ namespace SecretSanta.ApiService.DTOs
         public string Name { get; set; } = null!;
         public int GiftCost { get; set; }
     }
+
+    public class CreateWishRequest
+    {
+        [Required]
+        public string WishText { get; set; } = null!;
+    }
 }

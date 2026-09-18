@@ -15,14 +15,14 @@ namespace SecretSanta.ApiService.Controllers
         [HttpPost("{gameId}/gifts")]
         public async Task<IActionResult> AddGift(int gameId, [FromBody] UserGiftDto dto)
         {
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "uid");
-            if (userIdClaim == null)
+            if (!this.TryGetCurrentUserId(out var userId))
                 return Unauthorized();
-
-            int userId = int.Parse(userIdClaim.Value);
 
             var game = await _db.Games.FindAsync(gameId);
             if (game == null) return NotFound();
+
+            if (!await CanAccessGame(gameId, userId))
+                return Forbid();
 
             var gift = new UserGift
             {
@@ -46,11 +46,14 @@ namespace SecretSanta.ApiService.Controllers
         [HttpGet("{gameId}/gifts")]
         public async Task<IActionResult> GetUserGifts(int gameId)
         {
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "uid");
-            if (userIdClaim == null)
+            if (!this.TryGetCurrentUserId(out var userId))
                 return Unauthorized();
 
-            int userId = int.Parse(userIdClaim.Value);
+            if (!await _db.Games.AnyAsync(g => g.GameId == gameId))
+                return NotFound("Игра не найдена");
+
+            if (!await CanAccessGame(gameId, userId))
+                return Forbid();
 
             var gifts = await _db.UserGifts
                 .Where(g => g.GameId == gameId && g.UserId == userId)
@@ -68,11 +71,14 @@ namespace SecretSanta.ApiService.Controllers
         [HttpDelete("{gameId}/gifts/{giftId}")]
         public async Task<IActionResult> DeleteGift(int gameId, int giftId)
         {
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "uid");
-            if (userIdClaim == null)
+            if (!this.TryGetCurrentUserId(out var userId))
                 return Unauthorized();
 
-            int userId = int.Parse(userIdClaim.Value);
+            if (!await _db.Games.AnyAsync(g => g.GameId == gameId))
+                return NotFound("Игра не найдена");
+
+            if (!await CanAccessGame(gameId, userId))
+                return Forbid();
 
             var gift = await _db.UserGifts.FirstOrDefaultAsync(g =>
                 g.UserGiftId == giftId &&
@@ -82,15 +88,15 @@ namespace SecretSanta.ApiService.Controllers
             if (gift == null)
                 return NotFound("Подарок не найден");
 
-            var game = await _db.Games.FindAsync(gameId);
-            if (game == null)
-                return NotFound("Игра не найдена");
-
             _db.UserGifts.Remove(gift);
             await _db.SaveChangesAsync();
 
             return Ok();
         }
+
+        private Task<bool> CanAccessGame(int gameId, int userId) =>
+            _db.Games.AnyAsync(g => g.GameId == gameId &&
+                (g.CreatorId == userId || g.UserGames.Any(ug => ug.UserId == userId)));
 
     }
 }

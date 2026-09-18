@@ -1,26 +1,40 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SecretSanta.ApiService.DTOs;
 
 namespace SecretSanta.ApiService.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class WishesController(AppDbContext db) : ControllerBase
     {
         private readonly AppDbContext _db = db;
 
         [HttpPost]
-        public async Task<IActionResult> AddWish([FromBody] Wish wish)
+        public async Task<IActionResult> AddWish([FromBody] CreateWishRequest request)
         {
-            wish.CreatedAt = DateTime.UtcNow;
+            if (!this.TryGetCurrentUserId(out var userId))
+                return Unauthorized();
+
+            var wish = new Wish
+            {
+                UserId = userId,
+                WishText = request.WishText,
+                CreatedAt = DateTime.UtcNow
+            };
             _db.Wishes.Add(wish);
             await _db.SaveChangesAsync();
             return Ok(wish);
         }
 
-        [HttpGet("user/{userId}")]
-        public async Task<IActionResult> GetWishes(int userId)
+        [HttpGet("user")]
+        public async Task<IActionResult> GetWishes()
         {
+            if (!this.TryGetCurrentUserId(out var userId))
+                return Unauthorized();
+
             var wishes = await _db.Wishes.Where(w => w.UserId == userId).ToListAsync();
             return Ok(wishes);
         }
