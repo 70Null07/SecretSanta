@@ -26,6 +26,12 @@ namespace SecretSanta.ApiService
                 .HasIndex(user => user.NormalizedDisplayName)
                 .IsUnique();
 
+            modelBuilder.Entity<User>().Property(user => user.DisplayName).HasMaxLength(100);
+            modelBuilder.Entity<User>().Property(user => user.NormalizedDisplayName).HasMaxLength(100);
+            modelBuilder.Entity<User>().Property(user => user.RealName).HasMaxLength(200);
+            modelBuilder.Entity<User>().Property(user => user.Email).HasMaxLength(320);
+            modelBuilder.Entity<User>().Property(user => user.NormalizedEmail).HasMaxLength(320);
+
             modelBuilder.Entity<User>()
                 .HasIndex(user => user.NormalizedEmail)
                 .IsUnique()
@@ -45,6 +51,10 @@ namespace SecretSanta.ApiService
                 .HasIndex(point => point.Code)
                 .IsUnique();
 
+            modelBuilder.Entity<AnonGuestCode>()
+                .HasIndex(code => code.AccessCode)
+                .IsUnique();
+
             modelBuilder.Entity<SantaAssignment>()
                 .HasIndex(assignment => new { assignment.GameId, assignment.GiverUserId })
                 .IsUnique();
@@ -52,6 +62,53 @@ namespace SecretSanta.ApiService
             modelBuilder.Entity<SantaAssignment>()
                 .HasIndex(assignment => new { assignment.GameId, assignment.ReceiverUserId })
                 .IsUnique();
+
+            modelBuilder.Entity<Game>().Property(game => game.Name).HasMaxLength(200);
+            modelBuilder.Entity<Game>()
+                .HasOne(game => game.Creator)
+                .WithMany()
+                .HasForeignKey(game => game.CreatorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<UserGift>().Property(gift => gift.GiftName).HasMaxLength(300);
+            modelBuilder.Entity<UserGift>().Property(gift => gift.DeliveryMethod).HasMaxLength(300);
+            modelBuilder.Entity<UserGift>()
+                .HasOne(gift => gift.Game)
+                .WithMany()
+                .HasForeignKey(gift => gift.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<UserGift>()
+                .HasOne(gift => gift.User)
+                .WithMany()
+                .HasForeignKey(gift => gift.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Wish>().Property(wish => wish.WishText).HasMaxLength(1000);
+            modelBuilder.Entity<DeliveryPoint>().Property(point => point.Code).HasMaxLength(100);
+            modelBuilder.Entity<DeliveryPoint>().Property(point => point.Description).HasMaxLength(500);
+            modelBuilder.Entity<AnonGuestCode>().Property(code => code.AccessCode).HasMaxLength(100);
+            modelBuilder.Entity<GameInvite>().Property(invite => invite.Token).HasMaxLength(100);
+
+            modelBuilder.Entity<SantaAssignment>()
+                .HasOne(assignment => assignment.Game)
+                .WithMany()
+                .HasForeignKey(assignment => assignment.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<SantaAssignment>()
+                .HasOne(assignment => assignment.Giver)
+                .WithMany()
+                .HasForeignKey(assignment => assignment.GiverUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<SantaAssignment>()
+                .HasOne(assignment => assignment.Receiver)
+                .WithMany()
+                .HasForeignKey(assignment => assignment.ReceiverUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<SantaAssignment>()
+                .HasOne(assignment => assignment.SelectedGift)
+                .WithMany()
+                .HasForeignKey(assignment => assignment.SelectedGiftId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
 
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
@@ -173,6 +230,7 @@ namespace SecretSanta.ApiService
         [Required]
         public int ReceiverUserId { get; set; }
         public int GameId { get; set; }
+        public Game Game { get; set; } = null!;
         public int? SelectedGiftId { get; set; }
         public UserGift? SelectedGift { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

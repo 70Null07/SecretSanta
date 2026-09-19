@@ -20,21 +20,35 @@ var connectionString = builder.Configuration.GetConnectionString("Default")
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>("postgresql", tags: ["ready"]);
+
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+
+var jwtSection = builder.Configuration.GetSection(JwtOptions.SectionName);
+builder.Services.AddOptions<JwtOptions>()
+    .Bind(jwtSection)
+    .ValidateDataAnnotations()
+    .Validate(options => Encoding.UTF8.GetByteCount(options.Key) >= 32,
+        "Jwt:Key must contain at least 32 bytes.")
+    .ValidateOnStart();
+
+var jwtSettings = jwtSection.Get<JwtOptions>()
+    ?? throw new InvalidOperationException("JWT configuration is missing.");
 
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
     {
-        var settings = builder.Configuration.GetSection("Jwt");
         options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
         {
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = settings["Issuer"],
-            ValidAudience = settings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings["Key"]))
+            ValidIssuer = jwtSettings.Issuer,
+            ValidAudience = jwtSettings.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key)),
+            ClockSkew = TimeSpan.FromMinutes(1)
         };
     });
 
@@ -48,11 +62,13 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-await using (var scope = app.Services.CreateAsyncScope())
+// Aspire/local development runs a single API instance. Production schema changes are
+// applied by the dedicated migration job in compose/deployment, never by API replicas.
+if (app.Environment.IsDevelopment())
 {
+    await using var scope = app.Services.CreateAsyncScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await dbContext.Database.EnsureCreatedAsync();
-    await dbContext.ApplyAssignmentConstraintsAsync();
+    await dbContext.Database.MigrateAsync();
 }
 
 app.MapDefaultEndpoints();

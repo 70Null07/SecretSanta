@@ -9,6 +9,10 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddOutputCache();
 
+var apiBaseUrl = builder.Configuration["Services:Api:BaseUrl"] ?? "http://apiservice";
+builder.Services.AddHttpClient("api", client =>
+    client.BaseAddress = new Uri(apiBaseUrl, UriKind.Absolute));
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())

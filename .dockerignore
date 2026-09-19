@@ -1,0 +1,17 @@
+.git
+.github
+.vs
+.vscode
+.idea
+**/bin
+**/obj
+TestResults
+artifacts
+.env
+.env.*
+!.env.example
+*.user
+*.suo
+*.pfx
+*.publishsettings
+node_modules

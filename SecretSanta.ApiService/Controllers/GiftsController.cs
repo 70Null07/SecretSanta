@@ -31,15 +31,8 @@ namespace SecretSanta.ApiService.Controllers
                 GiftName = dto.GiftName,
                 DeliveryMethod = dto.DeliveryMethod
             };
-            try
-            {
-                _db.UserGifts.Add(gift);
-                await _db.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            _db.UserGifts.Add(gift);
+            await _db.SaveChangesAsync();
             return Ok(dto);
         }
 
