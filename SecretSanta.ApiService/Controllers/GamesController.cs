@@ -113,6 +113,11 @@ namespace SecretSanta.ApiService.Controllers
             if (invite == null)
                 return this.ApiError(StatusCodes.Status404NotFound, "invite_not_found");
 
+            // A completed draw is immutable: adding a participant afterwards would
+            // create a member without an assignment and expose a misleading game state.
+            if (invite.Game.IsDrawn)
+                return this.ApiError(StatusCodes.Status409Conflict, "game_already_drawn");
+
             // Проверяем, что пользователь ещё не участвует
             bool alreadyJoined = invite.Game.UserGames.Any(ug => ug.UserId == userId);
             if (!alreadyJoined)
