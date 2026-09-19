@@ -157,7 +157,6 @@
     private async Task LoginAsync()
     {
         var client = ClientFactory.CreateClient("api");
-
         var req = new LoginRequest
         {
             Identifier = loginName,
@@ -207,7 +206,6 @@
     private async Task RegisterAsync()
     {
         var client = ClientFactory.CreateClient("api");
-
         var req = new RegisterRequest
         {
             DisplayName = loginName,

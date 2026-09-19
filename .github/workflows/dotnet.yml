@@ -1,39 +1,113 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
-
-name: .NET
+name: Build, test and publish
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [master]
+    tags: ['v*']
   pull_request:
-    branches: [ "master" ]
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  build:
-
+  verify:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 10.0.x
-    - name: Restore dependencies
-      run: dotnet restore SecretSanta.slnx
-    - name: Build
-      run: dotnet build SecretSanta.slnx --no-restore --configuration Release
-    - name: Test
-      run: dotnet test SecretSanta.slnx --no-build --configuration Release --verbosity normal
-    - name: Build API image
-      run: docker build --file SecretSanta.ApiService/Dockerfile --target final --tag secretsanta-api:ci .
-    - name: Build Web image
-      run: docker build --file SecretSanta.Web/Dockerfile --target final --tag secretsanta-web:ci .
-    - name: Validate Compose configuration
-      env:
-        POSTGRES_DB: secretsanta
-        POSTGRES_USER: secretsanta
-        POSTGRES_PASSWORD: ci-only-password
-        JWT__KEY: ci-only-signing-key-at-least-32-bytes-long
-      run: docker compose config --quiet
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: '**/*.csproj'
+      - name: Restore
+        run: dotnet restore SecretSanta.slnx
+      - name: Build
+        run: dotnet build SecretSanta.slnx --configuration Release --no-restore
+      - name: Test
+        run: dotnet test SecretSanta.slnx --configuration Release --no-build --logger trx --results-directory TestResults
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: TestResults
+          if-no-files-found: ignore
+      - name: Validate Compose configurations
+        env:
+          POSTGRES_DB: secretsanta
+          POSTGRES_USER: secretsanta
+          POSTGRES_PASSWORD: ci-only-password
+          JWT__KEY: ci-only-signing-key-at-least-32-bytes-long
+          JWT__ISSUER: SecretSanta
+          JWT__AUDIENCE: SecretSantaUsers
+          SECRETS_DIR: ${{ runner.temp }}/secrets
+          APP_VERSION: sha-${{ github.sha }}
+        run: |
+          mkdir -p "$SECRETS_DIR"
+          printf '%s' "$POSTGRES_PASSWORD" > "$SECRETS_DIR/postgres_password"
+          printf '%s' 'Host=postgres;Database=secretsanta;Username=secretsanta;Password=ci-only-password' > "$SECRETS_DIR/ConnectionStrings__Default"
+          printf '%s' "$JWT__KEY" > "$SECRETS_DIR/Jwt__Key"
+          docker compose config --quiet
+          docker compose -f compose.yaml -f compose.production.yaml config --quiet
+      - name: Smoke-test the complete Compose stack
+        env:
+          POSTGRES_DB: secretsanta
+          POSTGRES_USER: secretsanta
+          POSTGRES_PASSWORD: ci-only-password
+          JWT__KEY: ci-only-signing-key-at-least-32-bytes-long
+          WEB_PORT: 8080
+        run: |
+          trap 'docker compose logs; docker compose down --volumes --remove-orphans' EXIT
+          docker compose up --build --detach --wait --wait-timeout 240
+          curl --fail --show-error --silent http://127.0.0.1:8080/health
+
+  images:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - name: api
+            file: SecretSanta.ApiService/Dockerfile
+            target: final
+          - name: web
+            file: SecretSanta.Web/Dockerfile
+            target: final
+          - name: migrator
+            file: SecretSanta.ApiService/Dockerfile
+            target: migrations
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ghcr.io/70null07/secretsanta-${{ matrix.name }}
+          tags: |
+            type=sha,prefix=sha-
+            type=ref,event=tag
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          target: ${{ matrix.target }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.meta.outputs.version }}
+            REVISION=${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+          provenance: mode=max
+          sbom: true
