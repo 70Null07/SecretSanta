@@ -54,6 +54,9 @@
 
 @code 
 {
+    private const string ClientIdHeader = "X-SecretSanta-Client-Id";
+    private readonly string authenticationClientId = Guid.NewGuid().ToString("N");
+
     public class LoginRequest
     {
         public string Identifier { get; set; }
@@ -157,6 +160,7 @@
     private async Task LoginAsync()
     {
         var client = ClientFactory.CreateClient("api");
+        client.DefaultRequestHeaders.Add(ClientIdHeader, authenticationClientId);
 
         var req = new LoginRequest
         {
@@ -207,6 +211,7 @@
     private async Task RegisterAsync()
     {
         var client = ClientFactory.CreateClient("api");
+        client.DefaultRequestHeaders.Add(ClientIdHeader, authenticationClientId);
 
         var req = new RegisterRequest
         {

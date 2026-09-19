@@ -65,7 +65,7 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.AddPolicy("authentication", context =>
         RateLimitPartition.GetFixedWindowLimiter(
-            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            AuthenticationRateLimitPartition.GetPartitionKey(context),
             _ => new FixedWindowRateLimiterOptions
             {
                 PermitLimit = 10,
@@ -110,3 +110,16 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public static class AuthenticationRateLimitPartition
+{
+    public const string ClientIdHeader = "X-SecretSanta-Client-Id";
+
+    public static string GetPartitionKey(HttpContext context)
+    {
+        var clientId = context.Request.Headers[ClientIdHeader].ToString();
+        return Guid.TryParseExact(clientId, "N", out var parsedClientId)
+            ? parsedClientId.ToString("N")
+            : context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+    }
+}

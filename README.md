@@ -83,11 +83,12 @@ docker compose exec -T postgres pg_dump \
   -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc > secretsanta.dump
 ```
 
-Restore into a prepared database:
+Use the restore script to stop application traffic, recreate the target database,
+restore the dump, validate connectivity, and restart only the application services
+that were running before the restore:
 
 ```bash
-docker compose exec -T postgres pg_restore \
-  -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists < secretsanta.dump
+CONFIRM_RESTORE=YES ./ops/restore-postgres.sh secretsanta.dump
 ```
 
 Store backups away from the Docker host and regularly test restoration into a
@@ -200,8 +201,11 @@ CONFIRM_RESTORE=YES ./ops/restore-postgres.sh \
   /opt/secretsanta/backups/secretsanta-YYYYMMDDTHHMMSSZ.dump
 ```
 
-Restoration is destructive for the selected database. After it completes,
-check migration history, start the pinned application version, and execute the
+Restoration is destructive for the selected database. The script stops API and
+Web traffic before dropping and recreating the database, validates the restored
+database, and then restarts whichever of those services were previously running.
+If restoration fails, it leaves both services stopped. After it completes, check
+migration history, start the pinned application version if needed, and execute the
 registration, login, game, invitation, gift, and draw smoke scenarios. The
 recovery target is RTO 24 hours and RPO 6 hours. Record every restore drill,
 including duration and the newest restored transaction time.
