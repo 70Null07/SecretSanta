@@ -18,7 +18,7 @@ docker compose -f compose.yaml -f compose.production.yaml exec -T postgres \
 test -s "$output"
 docker compose -f compose.yaml -f compose.production.yaml exec -T postgres \
   pg_restore --list < "$output" > /dev/null
-sha256sum "$output" > "$output.sha256"
+(cd "$BACKUP_DIR" && sha256sum "$(basename "$output")" > "$(basename "$output").sha256")
 find "$BACKUP_DIR" -type f \( -name 'secretsanta-*.dump' -o -name 'secretsanta-*.dump.sha256' \) \
   -mtime "+$retention_days" -delete
 
