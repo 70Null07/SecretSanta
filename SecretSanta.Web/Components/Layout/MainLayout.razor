@@ -1,4 +1,4 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @rendermode InteractiveServer
 @inject IJSRuntime JS
 @inject NavigationManager Nav
@@ -98,7 +98,7 @@
                 try
                 {
                     // Проверяем валидность токена
-                    var response = await client.GetAsync("http://apiservice/api/auth/validate");
+                    var response = await client.GetAsync("api/auth/validate");
                     if (response.IsSuccessStatusCode)
                     {
                         currentUserName = await JS.InvokeAsync<string>("localStorage.getItem", "username");
@@ -164,7 +164,7 @@
             Password = password
         };
 
-        var response = await client.PostAsJsonAsync("http://apiservice/api/auth/login", req);
+        var response = await client.PostAsJsonAsync("api/auth/login", req);
 
         if (response.IsSuccessStatusCode)
         {
@@ -216,7 +216,7 @@
             RealName = null
         };
 
-        var response = await client.PostAsJsonAsync("http://apiservice/api/auth/register", req);
+        var response = await client.PostAsJsonAsync("api/auth/register", req);
 
         if (response.IsSuccessStatusCode)
         {
@@ -226,7 +226,7 @@
                 Password = password
             };
 
-            var loginResponse = await client.PostAsJsonAsync("http://apiservice/api/auth/login", loginReq);
+            var loginResponse = await client.PostAsJsonAsync("api/auth/login", loginReq);
             if (loginResponse.IsSuccessStatusCode)
             {
                 var result = await loginResponse.Content.ReadFromJsonAsync<LoginResult>();

@@ -2,23 +2,79 @@ services:
   postgres:
     image: postgres:18
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      # PostgreSQL 18 stores version-specific data below this mount point.
+      - postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 10s
+    restart: unless-stopped
 
-  apiservice:
+  migrate:
     build:
       context: .
       dockerfile: SecretSanta.ApiService/Dockerfile
+      target: migrations
     environment:
-      - ConnectionStrings__Default=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
-    ports:
-      - "8080:8080"
+      ConnectionStrings__Default: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      Jwt__Key: ${JWT__KEY:?Set JWT__KEY in .env}
+      Jwt__Issuer: ${JWT__ISSUER:-SecretSanta}
+      Jwt__Audience: ${JWT__AUDIENCE:-SecretSantaUsers}
+      Jwt__ExpiresMinutes: ${JWT__EXPIRESMINUTES:-60}
     depends_on:
       postgres:
         condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: SecretSanta.ApiService/Dockerfile
+      target: final
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      Jwt__Key: ${JWT__KEY}
+      Jwt__Issuer: ${JWT__ISSUER:-SecretSanta}
+      Jwt__Audience: ${JWT__AUDIENCE:-SecretSantaUsers}
+      Jwt__ExpiresMinutes: ${JWT__EXPIRESMINUTES:-60}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: SecretSanta.Web/Dockerfile
+      target: final
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Services__Api__BaseUrl: http://api:8080
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

@@ -1,4 +1,4 @@
-﻿@page "/mygames"
+@page "/mygames"
 @inject IHttpClientFactory ClientFactory
 @inject IJSRuntime JS
 @using System.Net.Http.Headers
@@ -294,7 +294,7 @@
         var client = ClientFactory.CreateClient("api");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var gifts = await client.GetFromJsonAsync<List<UserGiftDto>>($"http://apiservice/api/Gifts/{gameId}/gifts");
+        var gifts = await client.GetFromJsonAsync<List<UserGiftDto>>($"api/Gifts/{gameId}/gifts");
         if (gifts != null)
             myGifts = gifts;
     }
@@ -314,7 +314,7 @@
             DeliveryMethod = newDeliveryMethod
         };
 
-        var response = await client.PostAsJsonAsync($"http://apiservice/api/Gifts/{selectedGame.GameId}/gifts", dto);
+        var response = await client.PostAsJsonAsync($"api/Gifts/{selectedGame.GameId}/gifts", dto);
         if (response.IsSuccessStatusCode)
         {
             newGiftName = string.Empty;
@@ -339,7 +339,7 @@
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var response = await client.DeleteAsync(
-            $"http://apiservice/api/gifts/{selectedGame.GameId}/gifts/{giftId}");
+            $"api/gifts/{selectedGame.GameId}/gifts/{giftId}");
 
         if (response.IsSuccessStatusCode)
         {
@@ -369,7 +369,7 @@
             var client = ClientFactory.CreateClient("api");
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            var response = await client.GetFromJsonAsync<List<GameListDto>>("http://apiservice/api/games/user");
+            var response = await client.GetFromJsonAsync<List<GameListDto>>("api/games/user");
             if (response != null)
                 games = response;
         }
@@ -389,7 +389,7 @@
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var content = JsonContent.Create(new CreateGameRequest { Name = newGameName, GiftCost = giftCost });
-        var response = await client.PostAsync("http://apiservice/api/games", content);
+        var response = await client.PostAsync("api/games", content);
 
 
         if (response.IsSuccessStatusCode)
@@ -445,7 +445,7 @@
 
         try
         {
-            var result = await client.GetFromJsonAsync<RecieverGiftDto>($"http://apiservice/api/Assignments/giver/{gameId}");
+            var result = await client.GetFromJsonAsync<RecieverGiftDto>($"api/Assignments/giver/{gameId}");
             if (result != null)
             {
                 assgGifts = result;
@@ -463,7 +463,7 @@
         var client = ClientFactory.CreateClient("api");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var response = await client.PostAsync($"http://apiservice/api/Assignments/draw/{selectedGame!.GameId}", null);
+        var response = await client.PostAsync($"api/Assignments/draw/{selectedGame!.GameId}", null);
         if (response.IsSuccessStatusCode)
         {
             await LoadGamesAsync();
@@ -487,7 +487,7 @@
         var client = ClientFactory.CreateClient("api");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var result = await client.GetFromJsonAsync<MyGiftDto>($"http://apiservice/api/Gifts/{gameId}/myassignment");
+        var result = await client.GetFromJsonAsync<MyGiftDto>($"api/Gifts/{gameId}/myassignment");
         if (result != null)
         {
             myGiftName = result.GiftName;
@@ -504,7 +504,7 @@
         var client = ClientFactory.CreateClient("api");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var response = await client.PostAsync($"http://apiservice/api/games/{selectedGame.GameId}/invite", null);
+        var response = await client.PostAsync($"api/games/{selectedGame.GameId}/invite", null);
         if (response.IsSuccessStatusCode)
         {
             var result = await response.Content.ReadFromJsonAsync<InviteResult>();
@@ -532,7 +532,7 @@
             var client = ClientFactory.CreateClient("api");
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", this.token);
 
-            var response = await client.PostAsync($"http://apiservice/api/games/join/{token}", null);
+            var response = await client.PostAsync($"api/games/join/{token}", null);
             if (response.IsSuccessStatusCode)
             {
                 await LoadGamesAsync(); // Обновляем список игр

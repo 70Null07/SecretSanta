@@ -1,14 +1,14 @@
 ﻿namespace SecretSanta.ApiService.Services
 {
-    using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.Options;
     using Microsoft.IdentityModel.Tokens;
     using System.IdentityModel.Tokens.Jwt;
     using System.Security.Claims;
     using System.Text;
 
-    public class JwtService(IConfiguration config)
+    public class JwtService(IOptions<JwtOptions> options)
     {
-        private readonly IConfiguration _config = config;
+        private readonly JwtOptions _options = options.Value;
 
         public string GenerateToken(int userId, string displayName)
         {
@@ -19,14 +19,14 @@
             new Claim("displayName", displayName)
         };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
+                issuer: _options.Issuer,
+                audience: _options.Audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddDays(14),
+                expires: DateTime.UtcNow.AddMinutes(_options.ExpiresMinutes),
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
