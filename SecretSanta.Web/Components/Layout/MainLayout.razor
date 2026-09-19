@@ -38,8 +38,8 @@
 <footer class="site-footer"><div class="shell"><span class="brand footer-brand"><span class="brand-mark" aria-hidden="true"><span></span></span>@Localizer["AppName"]</span><span>@Localizer["FooterText"]</span></div></footer>
 
 @if (showAuth) {
-  <div class="dialog-backdrop" @onclick="CloseAuth">
-    <section class="dialog auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-title" @onclick:stopPropagation @onkeydown="HandleDialogKey">
+  <div class="dialog-backdrop" @onpointerdown="CloseAuth">
+    <section class="dialog auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-title" @onpointerdown:stopPropagation @onkeydown="HandleDialogKey">
       <button class="icon-button dialog-close" @onclick="CloseAuth" aria-label="@Localizer["Close"]">×</button>
       <div class="auth-ribbon" aria-hidden="true"></div>
       <p class="eyebrow">@Localizer["PrivateAndSimple"]</p>
