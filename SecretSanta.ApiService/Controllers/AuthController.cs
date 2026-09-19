@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using Microsoft.AspNetCore.RateLimiting;
 using SecretSanta.ApiService.DTOs;
 using SecretSanta.ApiService.Services;
 
@@ -17,6 +18,7 @@ namespace SecretSanta.ApiService.Controllers
         private readonly JwtService _jwt = jwt;
 
         [HttpPost("register")]
+        [EnableRateLimiting("authentication")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest req)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -61,6 +63,7 @@ namespace SecretSanta.ApiService.Controllers
             exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
 
         [HttpPost("login")]
+        [EnableRateLimiting("authentication")]
         public async Task<IActionResult> Login([FromBody] LoginRequest req)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);

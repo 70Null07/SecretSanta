@@ -1,0 +1,80 @@
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_PASSWORD: null
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    networks: [backend]
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
+    stop_grace_period: 1m
+
+  migrate:
+    image: ghcr.io/70null07/secretsanta-migrator:${APP_VERSION:?Set APP_VERSION}
+    build: null
+    environment:
+      SECRETS_PATH: /run/secrets
+      ConnectionStrings__Default: null
+      Jwt__Key: null
+    secrets:
+      - source: connection_string
+        target: ConnectionStrings__Default
+      - source: jwt_key
+        target: Jwt__Key
+    networks: [backend]
+
+  api:
+    image: ghcr.io/70null07/secretsanta-api:${APP_VERSION:?Set APP_VERSION}
+    build: null
+    environment:
+      SECRETS_PATH: /run/secrets
+      ConnectionStrings__Default: null
+      Jwt__Key: null
+    secrets:
+      - source: connection_string
+        target: ConnectionStrings__Default
+      - source: jwt_key
+        target: Jwt__Key
+    networks: [backend]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    logging: *logging
+    stop_grace_period: 30s
+
+  web:
+    image: ghcr.io/70null07/secretsanta-web:${APP_VERSION:?Set APP_VERSION}
+    build: null
+    environment:
+      DataProtection__KeysPath: /app/keys
+    networks: [frontend, backend]
+    volumes:
+      - web_dataprotection:/app/keys
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    logging: *logging
+    stop_grace_period: 30s
+
+networks:
+  frontend:
+  backend:
+    internal: true
+
+volumes:
+  web_dataprotection:
+
+secrets:
+  postgres_password:
+    file: ${SECRETS_DIR:?Set SECRETS_DIR}/postgres_password
+  connection_string:
+    file: ${SECRETS_DIR:?Set SECRETS_DIR}/ConnectionStrings__Default
+  jwt_key:
+    file: ${SECRETS_DIR:?Set SECRETS_DIR}/Jwt__Key

@@ -1,11 +1,18 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Threading.RateLimiting;
 using SecretSanta.ApiService;
 using SecretSanta.ApiService.Services;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var secretsPath = builder.Configuration["SECRETS_PATH"];
+if (!string.IsNullOrWhiteSpace(secretsPath))
+{
+    builder.Configuration.AddKeyPerFile(secretsPath, optional: false);
+}
 
 builder.AddServiceDefaults();
 
@@ -53,6 +60,20 @@ builder.Services.AddAuthentication("Bearer")
     });
 
 builder.Services.AddAuthorization();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("authentication", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+});
 builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddControllers();
@@ -74,6 +95,7 @@ if (app.Environment.IsDevelopment())
 app.MapDefaultEndpoints();
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
+app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
 {

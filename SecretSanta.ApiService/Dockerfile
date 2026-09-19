@@ -1,4 +1,9 @@
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+ARG VERSION=dev
+ARG REVISION=unknown
+LABEL org.opencontainers.image.source="https://github.com/70Null07/SecretSanta" \
+      org.opencontainers.image.version=$VERSION \
+      org.opencontainers.image.revision=$REVISION
 WORKDIR /app
 EXPOSE 8080
 ENV ASPNETCORE_HTTP_PORTS=8080

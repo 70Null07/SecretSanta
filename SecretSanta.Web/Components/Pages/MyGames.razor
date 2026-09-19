@@ -411,7 +411,7 @@
     }
 
     // Открытие игры в модальном окне
-    private async void OpenGameModal(GameListDto game)
+    private async Task OpenGameModal(GameListDto game)
     {
         selectedGame = game;
         isCreator = game.CreatorId == userId;

@@ -122,6 +122,9 @@ docker compose config --quiet
 docker compose build
 ```
 
+CI additionally starts the complete Compose stack against a fresh PostgreSQL
+volume and requires the Web/API health dependency chain to become ready.
+
 Health endpoints are available at `/alive` for process liveness and `/health`
 for readiness. API readiness includes its PostgreSQL connection.
 
@@ -134,3 +137,81 @@ for readiness. API readiness includes its PostgreSQL connection.
   proxy, and trust forwarded headers only from that proxy.
 - Configure resource limits, off-host backups, log collection, and a graceful
   shutdown window appropriate to the target platform.
+
+## Single-server production deployment
+
+Production uses pre-built immutable images from GHCR and file-backed Docker
+secrets. Create a directory outside the repository and use the filenames from
+`deploy/secrets.example`. Keep the directory owned by root with directory mode
+`0700` and file mode `0600`.
+
+```bash
+sudo install -d -m 0700 /opt/secretsanta/secrets /opt/secretsanta/backups
+sudo cp deploy/secrets.example/*.example /opt/secretsanta/secrets/
+# Rename the three files, replace every placeholder, then:
+sudo chmod 0600 /opt/secretsanta/secrets/*
+```
+
+Configure `.env` with `SECRETS_DIR=/opt/secretsanta/secrets`, a release
+`APP_VERSION` (a `v*` tag or `sha-*` tag published by CI), and the non-secret
+PostgreSQL/JWT settings. Deploy in this order:
+
+```bash
+docker compose -f compose.yaml -f compose.production.yaml pull
+docker compose -f compose.yaml -f compose.production.yaml up -d postgres
+docker compose -f compose.yaml -f compose.production.yaml run --rm migrate
+docker compose -f compose.yaml -f compose.production.yaml up -d api web
+docker compose -f compose.yaml -f compose.production.yaml ps
+```
+
+Only Web is published on the host. API and PostgreSQL use the internal backend
+network. The production overlay uses a persistent Data Protection key volume,
+read-only application filesystems, dropped Linux capabilities, bounded Docker
+logs, and graceful shutdown periods. Until a domain is available, expose Web
+only on a trusted network or behind a VPN. Do not send credentials over public
+plain HTTP. Add an HTTPS reverse proxy and forwarded-header allow-list before
+public Internet exposure.
+
+### Secrets
+
+The API reads `/run/secrets` with the ASP.NET Core key-per-file provider. A
+double underscore in a filename represents a configuration section delimiter.
+The PostgreSQL image reads its password through `POSTGRES_PASSWORD_FILE`.
+Secret files survive application container recreation because they live on the
+host, but they must also be backed up separately in encrypted form. Never copy
+them into an image or commit them to Git.
+
+### Six-hour RPO backup policy
+
+`ops/backup-postgres.sh` creates a custom-format dump, verifies that PostgreSQL
+can read its catalog, writes a SHA-256 checksum, and retains 14 days by default.
+Install `ops/secretsanta-backup.cron` on the Docker host to run it every six
+hours. Copy each completed dump and checksum to encrypted storage outside the
+Docker host; a local dump alone does not satisfy disaster recovery requirements.
+
+```bash
+BACKUP_DIR=/opt/secretsanta/backups ./ops/backup-postgres.sh
+```
+
+Test restoration at least monthly into an isolated environment:
+
+```bash
+CONFIRM_RESTORE=YES ./ops/restore-postgres.sh \
+  /opt/secretsanta/backups/secretsanta-YYYYMMDDTHHMMSSZ.dump
+```
+
+Restoration is destructive for the selected database. After it completes,
+check migration history, start the pinned application version, and execute the
+registration, login, game, invitation, gift, and draw smoke scenarios. The
+recovery target is RTO 24 hours and RPO 6 hours. Record every restore drill,
+including duration and the newest restored transaction time.
+
+### Upgrade and rollback
+
+Before every schema change, create and copy an off-host backup. Pull a specific
+immutable release, run exactly one migration job, then update API and Web and
+wait for readiness. Roll back only application images when the previous release
+is compatible with the migrated schema. Use additive expand/contract migrations
+so the previous application remains usable during the rollback window. For a
+destructive incompatible schema change, prefer a forward fix or a rehearsed
+database restore, explicitly accounting for data written after the backup.

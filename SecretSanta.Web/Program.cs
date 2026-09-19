@@ -1,6 +1,15 @@
 using SecretSanta.Web.Components;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var dataProtectionPath = builder.Configuration["DataProtection:KeysPath"];
+if (!string.IsNullOrWhiteSpace(dataProtectionPath))
+{
+    builder.Services.AddDataProtection()
+        .SetApplicationName("SecretSanta.Web")
+        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionPath));
+}
 
 builder.AddServiceDefaults();
 
