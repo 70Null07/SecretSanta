@@ -1,26 +1,29 @@
 @page "/mygames"
+@using SecretSanta.Web.Localization
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> Localizer
+<PageTitle>@Localizer["MyGames"]</PageTitle>
 <div class="hero">
     <div class="snowblock"></div>
     <div class="content">
-        <h2>🎅 Тайный Санта не просто игра — это магия зимы! ❄️</h2>
-        <p>Дарите радость, сюрпризы и тёплые эмоции друзьям!</p>
+        <h2>@Localizer["HeroTitle"]</h2>
+        <p>@Localizer["HeroSubtitle"]</p>
     </div>
 </div>
 
 <div class="container">
     @if (loading)
     {
-        <p>Загрузка...</p>
+        <p>@Localizer["Loading"]</p>
     }
     else if (!isLoggedIn)
     {
-        <p>Пожалуйста, войдите, чтобы видеть свои игры.</p>
+        <p>@Localizer["SignInToSeeGames"]</p>
     }
     else
     {
         @if (games?.Any() != true)
         {
-            <p>У вас пока нет игр.</p>
+            <p>@Localizer["NoGames"]</p>
         }
         else
         {
@@ -28,26 +31,26 @@
                 @foreach (var game in games)
                 {
                     <li class="games-li" @onclick="() => OpenGameModal(game)">
-                        @game.Name (@game.CreatedAt.ToShortDateString())
-                        — участников: @game.Participants.Count — стоимость подарка до @game.GiftCost
+                        @game.Name (@game.CreatedAt.ToString("d", System.Globalization.CultureInfo.CurrentCulture))
+                        — @UiText.ParticipantCount(Localizer, game.Participants.Count) — @Localizer["GiftCost", game.GiftCost]
                         @if (game.IsDrawn)
                         {
-                            <span style="color:green;"> (Жеребьёвка проведена)</span>
+                            <span style="color:green;"> @Localizer["DrawCompletedParenthetical"]</span>
                         }
                         @if (@game.CreatorId == userId)
                         {
-                            <span> — Создатель</span>
+                            <span> — @Localizer["Creator"]</span>
                         }
                         else
                         {
-                            <span> — Участник</span>
+                            <span> — @Localizer["Participant"]</span>
                         }
                     </li>
                 }
             </ul>
         }
         <div class="header-bar right" style="display:flex;justify-content:flex-end;">
-            <button @onclick="ToggleCreateGameModal">Создать игру</button>
+            <button @onclick="ToggleCreateGameModal">@Localizer["CreateGame"]</button>
         </div>
     }
 </div>
@@ -56,20 +59,20 @@
 {
     <div class="modal-backdrop" @onclick="ToggleCreateGameModal">
         <div class="modal-content" @onclick:stopPropagation="true">
-            <h3>Создать новую игру</h3>
+            <h3>@Localizer["CreateNewGame"]</h3>
             <div style="display:list-item;">
                 <div style="margin-bottom:5px;">
-                    <label>Название игры:</label>
-                    <input @bind=" newGameName" />
+                    <label>@Localizer["GameName"]</label>
+                    <input @bind="newGameName" />
                 </div>
                 <div>
-                    <label>Стоимость подарка до:</label>
+                    <label>@Localizer["GiftCostUpTo"]</label>
                     <input @bind="giftCost" />
                 </div>
             </div>
             <div class="header-bar right" style="margin-top:10px;display:block;">
-                <button @onclick="CreateGameAsync">Создать</button>
-                <button @onclick="ToggleCreateGameModal">Отмена</button>
+                <button @onclick="CreateGameAsync">@Localizer["Create"]</button>
+                <button @onclick="ToggleCreateGameModal">@Localizer["Cancel"]</button>
             </div>
         </div>
     </div>
@@ -81,7 +84,7 @@
         <div class="modal-content" @onclick:stopPropagation="true">
             <h3>@selectedGame.Name</h3>
 
-            <p>Участники:</p>
+            <p>@Localizer["Participants"]</p>
             <ol style="height: 150px;overflow-y:scroll;">
                 @foreach (var participant in selectedGame.Participants)
                 {
@@ -89,27 +92,27 @@
                 }
             </ol>
             <hr />
-            <p>Статус жеребьёвки: @(selectedGame.IsDrawn ? "Проведена" : "Не проведена")</p>
+            <p>@Localizer["DrawStatus", selectedGame.IsDrawn ? Localizer["Completed"] : Localizer["NotCompleted"]]</p>
             @if (!selectedGame.IsDrawn)
             {
-                <h4>Пожелания Санте</h4>
+                <h4>@Localizer["WishesForSanta"]</h4>
                 <span contenteditable="true"
                       style="display: inline-block;
                              border: solid 1px black;max-width: 550px">
                 </span>
                 <div class="header-bar buttons" style="display:flex;justify-content:center">
-                    <button>Добавить</button>
+                    <button>@Localizer["Add"]</button>
                 </div>
             }
             else
             {
-                <p>Получатель: @assgGifts.RecieverName</p>
+                <p>@Localizer["Recipient", assgGifts.RecieverName]</p>
                 @foreach (var assg in assgGifts.RecieverGifts)
                 {
                     <p style="margin-left:1.5em;">@assg.GiftName — @assg.DeliveryMethod</p>
                 }
             }
-            <h4>Мои желания</h4>
+            <h4>@Localizer["MyWishes"]</h4>
             <ul>
                 @foreach (var gift in myGifts)
                 {
@@ -127,22 +130,22 @@
             </ul>
 
             <div style="margin-top:10px">
-                <input placeholder="Название подарка" @bind="newGiftName" />
-                <input placeholder="Способ передачи" @bind="newDeliveryMethod" />
-                <button class="blue-button" @onclick="AddGiftAsync">Добавить</button>
+                <input placeholder="@Localizer["GiftNamePlaceholder"]" @bind="newGiftName" />
+                <input placeholder="@Localizer["DeliveryMethodPlaceholder"]" @bind="newDeliveryMethod" />
+                <button class="blue-button" @onclick="AddGiftAsync">@Localizer["Add"]</button>
             </div>
             @if (isCreator)
             {
                 <div class="header-bar buttons">
                     @if (!selectedGame.IsDrawn)
                     {
-                        <button @onclick="InviteParticipants">Пригласить участников</button>
-                        <button style="margin:5px;" @onclick="StartDraw">Начать жеребьёвку</button>
+                        <button @onclick="InviteParticipants">@Localizer["InviteParticipants"]</button>
+                        <button style="margin:5px;" @onclick="StartDraw">@Localizer["StartDraw"]</button>
                     }
                 </div>
             }
             <div class="header-bar" style="display:flex;justify-content:center">
-              <button @onclick="CloseGameModal">Закрыть</button>
+              <button @onclick="CloseGameModal">@Localizer["Close"]</button>
             </div>
         </div>
     </div>

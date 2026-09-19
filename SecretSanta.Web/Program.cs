@@ -1,5 +1,7 @@
 using SecretSanta.Web.Components;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Localization;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +17,15 @@ builder.AddServiceDefaults();
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+
+var supportedCultures = new[] { new CultureInfo("ru-RU"), new CultureInfo("en-US") };
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    options.DefaultRequestCulture = new RequestCulture("ru-RU");
+    options.SupportedCultures = supportedCultures;
+    options.SupportedUICultures = supportedCultures;
+});
 
 builder.Services.AddOutputCache();
 
@@ -23,6 +34,8 @@ builder.Services.AddHttpClient("api", client =>
     client.BaseAddress = new Uri(apiBaseUrl, UriKind.Absolute));
 
 var app = builder.Build();
+
+app.UseRequestLocalization();
 
 if (!app.Environment.IsDevelopment())
 {
@@ -34,6 +47,21 @@ app.UseAntiforgery();
 app.UseOutputCache();
 
 app.MapStaticAssets();
+
+app.MapGet("/culture/set", (string culture, string? redirectUri, HttpContext context) =>
+{
+    if (!supportedCultures.Any(item => item.Name == culture))
+    {
+        return Results.BadRequest();
+    }
+
+    context.Response.Cookies.Append(
+        CookieRequestCultureProvider.DefaultCookieName,
+        CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(culture)),
+        new CookieOptions { Expires = DateTimeOffset.UtcNow.AddYears(1), IsEssential = true, SameSite = SameSiteMode.Lax });
+
+    return Results.LocalRedirect(string.IsNullOrWhiteSpace(redirectUri) ? "/" : redirectUri);
+});
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

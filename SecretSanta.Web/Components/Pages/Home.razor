@@ -1,24 +1,28 @@
 ﻿@page "/"
+@using SecretSanta.Web.Localization
+@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> Localizer
+
+<PageTitle>@Localizer["Home"]</PageTitle>
 <div class="hero">
     <div class="snowblock"></div>
     <div class="content">
-        <h2>🎅 Тайный Санта не просто игра — это магия зимы! ❄️</h2>
-        <p>Дарите радость, сюрпризы и тёплые эмоции друзьям!</p>
+        <h2>@Localizer["HeroTitle"]</h2>
+        <p>@Localizer["HeroSubtitle"]</p>
     </div>
 </div>
 
 <div class="container">
-    <h3 style="margin-top:20px">Часто задаваемые вопросы</h3>
+    <h3 style="margin-top:20px">@Localizer["FaqTitle"]</h3>
     <div class="faq-item">
-        <div class="faq-question"><strong>Как присоединиться к игре?</strong></div>
-        <div class="faq-answer">Зарегистрируйтесь и выберите игру из списка или создайте новую.</div>
+        <div class="faq-question"><strong>@Localizer["FaqJoinQ"]</strong></div>
+        <div class="faq-answer">@Localizer["FaqJoinA"]</div>
     </div>
     <div class="faq-item">
-        <div class="faq-question"><strong>Можно ли участвовать анонимно?</strong></div>
-        <div class="faq-answer">Да, вы получите код гостя и сможете присоединиться без регистрации.</div>
+        <div class="faq-question"><strong>@Localizer["FaqAnonymousQ"]</strong></div>
+        <div class="faq-answer">@Localizer["FaqAnonymousA"]</div>
     </div>
     <div class="faq-item">
-        <div class="faq-question"><strong>Как проходит жеребьёвка?</strong></div>
-        <div class="faq-answer">Все участники случайным образом получают получателя, которого нужно будет поздравить.</div>
+        <div class="faq-question"><strong>@Localizer["FaqDrawQ"]</strong></div>
+        <div class="faq-answer">@Localizer["FaqDrawA"]</div>
     </div>
 </div>
