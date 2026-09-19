@@ -25,6 +25,11 @@ jobs:
         run: dotnet restore SecretSanta.slnx
       - name: Build
         run: dotnet build SecretSanta.slnx --configuration Release --no-restore
+      - name: Verify committed database migrations
+        working-directory: SecretSanta.ApiService
+        run: |
+          dotnet tool restore
+          dotnet ef migrations has-pending-model-changes --configuration Release --no-build
       - name: Test
         run: dotnet test SecretSanta.slnx --configuration Release --no-build --logger trx --results-directory TestResults
       - uses: actions/upload-artifact@v4

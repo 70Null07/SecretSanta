@@ -10,7 +10,9 @@ public sealed class AppDbContextModelSnapshot : ModelSnapshot
 {
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
-        modelBuilder.HasAnnotation("ProductVersion", "10.0.0");
+        modelBuilder
+            .HasAnnotation("ProductVersion", "10.0.0")
+            .HasAnnotation("Relational:MaxIdentifierLength", 63);
         modelBuilder.UseIdentityByDefaultColumns();
 
         modelBuilder.Entity<User>(b =>
