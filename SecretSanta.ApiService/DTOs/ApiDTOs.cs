@@ -49,7 +49,9 @@ namespace SecretSanta.ApiService.DTOs
     public class LoginRequest
     {
         [Required, StringLength(320)] public string Identifier { get; set; } = null!;
-        [Required, StringLength(200, MinimumLength = 8)] public string Password { get; set; } = null!;
+        // Login must continue to accept credentials created before the registration
+        // password-length policy was introduced.
+        [Required] public string Password { get; set; } = null!;
     }
 
     public class CreateGameRequest
