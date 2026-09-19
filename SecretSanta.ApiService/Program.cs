@@ -113,13 +113,12 @@ app.Run();
 
 public static class AuthenticationRateLimitPartition
 {
-    public const string ClientIdHeader = "X-SecretSanta-Client-Id";
-
     public static string GetPartitionKey(HttpContext context)
     {
-        var clientId = context.Request.Headers[ClientIdHeader].ToString();
-        return Guid.TryParseExact(clientId, "N", out var parsedClientId)
-            ? parsedClientId.ToString("N")
-            : context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        // Never trust a caller-supplied identity here: it can be changed to obtain a
+        // fresh limit. In production the API is internal, so requests from the Web
+        // gateway deliberately share its stable address and therefore retain the
+        // same authentication budget across Blazor circuit reconnects.
+        return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
     }
 }

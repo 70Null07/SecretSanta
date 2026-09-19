@@ -28,26 +28,22 @@ public sealed class LoginIdentifierTests
 public sealed class AuthenticationRateLimitPartitionTests
 {
     [Fact]
-    public void Uses_valid_browser_client_id_instead_of_web_container_address()
+    public void Uses_remote_address_even_when_caller_supplies_an_identity_header()
     {
         var context = new DefaultHttpContext();
         context.Connection.RemoteIpAddress = IPAddress.Parse("172.20.0.3");
-        context.Request.Headers[AuthenticationRateLimitPartition.ClientIdHeader] =
+        context.Request.Headers["X-SecretSanta-Client-Id"] =
             "37f748b02f0e4f67b378a047619ee1e7";
 
-        Assert.Equal("37f748b02f0e4f67b378a047619ee1e7",
+        Assert.Equal("172.20.0.3",
             AuthenticationRateLimitPartition.GetPartitionKey(context));
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData("not-a-client-id")]
-    public void Falls_back_to_remote_address_for_invalid_client_id(string clientId)
+    [Fact]
+    public void Uses_unknown_partition_when_remote_address_is_unavailable()
     {
         var context = new DefaultHttpContext();
-        context.Connection.RemoteIpAddress = IPAddress.Parse("172.20.0.3");
-        context.Request.Headers[AuthenticationRateLimitPartition.ClientIdHeader] = clientId;
 
-        Assert.Equal("172.20.0.3", AuthenticationRateLimitPartition.GetPartitionKey(context));
+        Assert.Equal("unknown", AuthenticationRateLimitPartition.GetPartitionKey(context));
     }
 }

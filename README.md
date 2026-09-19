@@ -143,14 +143,23 @@ for readiness. API readiness includes its PostgreSQL connection.
 
 Production uses pre-built immutable images from GHCR and file-backed Docker
 secrets. Create a directory outside the repository and use the filenames from
-`deploy/secrets.example`. Keep the directory owned by root with directory mode
-`0700` and file mode `0600`.
+`deploy/secrets.example`. File-backed Compose secrets retain their host numeric
+ownership and permissions, so each secret must be readable by the UID of the
+container that consumes it. Keep the directory root-owned and non-listable, and
+make the individual files `0400` and owned by the relevant container UID.
 
 ```bash
-sudo install -d -m 0700 /opt/secretsanta/secrets /opt/secretsanta/backups
+sudo install -d -m 0711 /opt/secretsanta/secrets
+sudo install -d -m 0700 /opt/secretsanta/backups
 sudo cp deploy/secrets.example/*.example /opt/secretsanta/secrets/
-# Rename the three files, replace every placeholder, then:
-sudo chmod 0600 /opt/secretsanta/secrets/*
+# Rename the three files and replace every placeholder. Then obtain the UIDs
+# from the exact images being deployed and assign each secret to its consumer:
+API_UID="$(docker run --rm --entrypoint id ghcr.io/70null07/secretsanta-api:$APP_VERSION -u)"
+POSTGRES_UID="$(docker run --rm --entrypoint id postgres:18 -u postgres)"
+sudo chown "$API_UID" /opt/secretsanta/secrets/ConnectionStrings__Default \
+  /opt/secretsanta/secrets/Jwt__Key
+sudo chown "$POSTGRES_UID" /opt/secretsanta/secrets/postgres_password
+sudo chmod 0400 /opt/secretsanta/secrets/*
 ```
 
 Configure `.env` with `SECRETS_DIR=/opt/secretsanta/secrets`, a release
@@ -190,6 +199,11 @@ Install `ops/secretsanta-backup.cron` on the Docker host to run it every six
 hours. Copy each completed dump and checksum to encrypted storage outside the
 Docker host; a local dump alone does not satisfy disaster recovery requirements.
 
+The supplied schedule is a root crontab because it needs access to the
+root-owned backup directory, `/var/log`, and the Docker daemon. Install it with
+`sudo crontab ops/secretsanta-backup.cron`; do not install it as the ordinary
+deployment user's crontab.
+
 ```bash
 BACKUP_DIR=/opt/secretsanta/backups ./ops/backup-postgres.sh
 ```
@@ -202,11 +216,11 @@ CONFIRM_RESTORE=YES ./ops/restore-postgres.sh \
 ```
 
 Restoration is destructive for the selected database. The script stops API and
-Web traffic before dropping and recreating the database, validates the restored
-database, and then restarts whichever of those services were previously running.
-If restoration fails, it leaves both services stopped. After it completes, check
-migration history, start the pinned application version if needed, and execute the
-registration, login, game, invitation, gift, and draw smoke scenarios. The
+Web traffic before dropping and recreating the database and validates the restored
+database. It always leaves application traffic stopped. After it completes, check
+migration history, select and deploy an application image compatible with the
+restored schema, and only then start API and Web and execute the registration,
+login, game, invitation, gift, and draw smoke scenarios. The
 recovery target is RTO 24 hours and RPO 6 hours. Record every restore drill,
 including duration and the newest restored transaction time.
 

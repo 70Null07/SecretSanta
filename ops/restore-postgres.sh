@@ -24,15 +24,7 @@ compose=(docker compose -f compose.yaml -f compose.production.yaml)
 database="${POSTGRES_DB:-secretsanta}"
 database_user="${POSTGRES_USER:-secretsanta}"
 
-running_services="$("${compose[@]}" ps --services --filter status=running)"
-services_to_restart=()
-for service in api web; do
-  if grep -qx "$service" <<< "$running_services"; then
-    services_to_restart+=("$service")
-  fi
-done
-
-echo "Stopping application traffic for the duration of the restore..."
+echo "Stopping application traffic before the restore..."
 "${compose[@]}" stop api web
 
 restore_succeeded=false
@@ -59,9 +51,6 @@ trap restore_cleanup EXIT
 restore_succeeded=true
 trap - EXIT
 
-if (( ${#services_to_restart[@]} > 0 )); then
-  echo "Restore validated; restarting services that were previously running..."
-  "${compose[@]}" start "${services_to_restart[@]}"
-fi
-
-echo "Restore completed and database connectivity validated; run application smoke tests."
+echo "Restore completed and database connectivity validated."
+echo "API and Web remain stopped. Select an image compatible with the restored schema,"
+echo "validate its migration state, and explicitly start the application afterward."
