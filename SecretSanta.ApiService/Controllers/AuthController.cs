@@ -21,16 +21,16 @@ namespace SecretSanta.ApiService.Controllers
         [EnableRateLimiting("authentication")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest req)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid) return this.ApiError(StatusCodes.Status400BadRequest, "validation_failed");
 
             var normalizedName = LoginIdentifier.Normalize(req.DisplayName);
             var normalizedEmail = LoginIdentifier.NormalizeOptional(req.Email);
             var existsName = await _db.Users.AnyAsync(u => u.NormalizedDisplayName == normalizedName);
-            if (existsName) return BadRequest("Имя уже занято");
+            if (existsName) return this.ApiError(StatusCodes.Status400BadRequest, "name_taken");
 
             if (normalizedEmail != null &&
                 await _db.Users.AnyAsync(u => u.NormalizedEmail == normalizedEmail))
-                return BadRequest("Email уже используется");
+                return this.ApiError(StatusCodes.Status400BadRequest, "email_taken");
 
             var user = new User
             {
@@ -52,7 +52,7 @@ namespace SecretSanta.ApiService.Controllers
             {
                 // A concurrent registration may win after the checks above. Never expose
                 // provider exception details or constraint names to the client.
-                return Conflict("Имя или email уже используются");
+                return this.ApiError(StatusCodes.Status409Conflict, "identity_taken");
             }
 
             var dto = new UserDto { UserId = user.UserId, DisplayName = user.DisplayName, Email = user.Email };
@@ -66,7 +66,7 @@ namespace SecretSanta.ApiService.Controllers
         [EnableRateLimiting("authentication")]
         public async Task<IActionResult> Login([FromBody] LoginRequest req)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid) return this.ApiError(StatusCodes.Status400BadRequest, "validation_failed");
 
             var normalizedIdentifier = LoginIdentifier.Normalize(req.Identifier);
             var user = await _db.Users
@@ -75,11 +75,11 @@ namespace SecretSanta.ApiService.Controllers
                 .FirstOrDefaultAsync();
 
             if (user == null)
-                return Unauthorized("Неверный логин или пароль");
+                return this.ApiError(StatusCodes.Status401Unauthorized, "invalid_credentials");
 
             var verify = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash ?? "", req.Password);
             if (verify == PasswordVerificationResult.Failed)
-                return Unauthorized("Неверный логин или пароль");
+                return this.ApiError(StatusCodes.Status401Unauthorized, "invalid_credentials");
 
             var token = _jwt.GenerateToken(user.UserId, user.DisplayName);
 

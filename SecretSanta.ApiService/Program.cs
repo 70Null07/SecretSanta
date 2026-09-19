@@ -5,6 +5,7 @@ using System.Threading.RateLimiting;
 using SecretSanta.ApiService;
 using SecretSanta.ApiService.Services;
 using System.Text;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -76,7 +77,20 @@ builder.Services.AddRateLimiter(options =>
 });
 builder.Services.AddScoped<JwtService>();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var problem = new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "validation_failed",
+                Extensions = { ["code"] = "validation_failed" }
+            };
+            return new BadRequestObjectResult(problem);
+        };
+    });
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

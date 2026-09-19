@@ -41,14 +41,14 @@ namespace SecretSanta.ApiService.Controllers
                     .Include(g => g.UserGames)
                     .ThenInclude(ug => ug.User)
                     .FirstOrDefaultAsync(g => g.GameId == gameId);
-                if (game == null) return NotFound("Игра не найдена");
+                if (game == null) return this.ApiError(StatusCodes.Status404NotFound, "game_not_found");
 
                 // Проверяем создателя
                 if (game.CreatorId != userId) return Forbid();
-                if (game.IsDrawn) return Conflict("Игра уже разыграна");
+                if (game.IsDrawn) return this.ApiError(StatusCodes.Status409Conflict, "game_already_drawn");
 
                 var participants = game.UserGames.Select(ug => ug.User).ToList();
-                if (participants.Count < 2) return BadRequest("Недостаточно участников");
+                if (participants.Count < 2) return this.ApiError(StatusCodes.Status400BadRequest, "not_enough_participants");
 
                 Shuffle(participants);
 
@@ -80,11 +80,11 @@ namespace SecretSanta.ApiService.Controllers
                 game.IsDrawn = true;
                 await _db.SaveChangesAsync();
                 await transaction.CommitAsync();
-                return Ok("Жеребьёвка выполнена");
+                return Ok();
             }
             catch (DbUpdateException exception) when (IsUniqueViolation(exception))
             {
-                return Conflict("Игра уже разыграна");
+                return this.ApiError(StatusCodes.Status409Conflict, "game_already_drawn");
             }
         }
 
@@ -124,7 +124,7 @@ namespace SecretSanta.ApiService.Controllers
             var receiver = await _db.Users
                 .FirstOrDefaultAsync(user => user.UserId == assignment.ReceiverUserId);
             if (receiver == null)
-                return NotFound("Получатель не найден");
+                return this.ApiError(StatusCodes.Status404NotFound, "recipient_not_found");
 
             var wishes = await _db.UserGifts.Where(a => a.GameId == gameId && a.UserId == assignment.ReceiverUserId).ToListAsync();
 

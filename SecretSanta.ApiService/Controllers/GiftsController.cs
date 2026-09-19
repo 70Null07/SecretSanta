@@ -19,7 +19,7 @@ namespace SecretSanta.ApiService.Controllers
                 return Unauthorized();
 
             var game = await _db.Games.FindAsync(gameId);
-            if (game == null) return NotFound();
+            if (game == null) return this.ApiError(StatusCodes.Status404NotFound, "game_not_found");
 
             if (!await CanAccessGame(gameId, userId))
                 return Forbid();
@@ -43,7 +43,7 @@ namespace SecretSanta.ApiService.Controllers
                 return Unauthorized();
 
             if (!await _db.Games.AnyAsync(g => g.GameId == gameId))
-                return NotFound("Игра не найдена");
+                return this.ApiError(StatusCodes.Status404NotFound, "game_not_found");
 
             if (!await CanAccessGame(gameId, userId))
                 return Forbid();
@@ -68,7 +68,7 @@ namespace SecretSanta.ApiService.Controllers
                 return Unauthorized();
 
             if (!await _db.Games.AnyAsync(g => g.GameId == gameId))
-                return NotFound("Игра не найдена");
+                return this.ApiError(StatusCodes.Status404NotFound, "game_not_found");
 
             if (!await CanAccessGame(gameId, userId))
                 return Forbid();
@@ -79,7 +79,7 @@ namespace SecretSanta.ApiService.Controllers
                 g.UserId == userId);
 
             if (gift == null)
-                return NotFound("Подарок не найден");
+                return this.ApiError(StatusCodes.Status404NotFound, "gift_not_found");
 
             _db.UserGifts.Remove(gift);
             await _db.SaveChangesAsync();

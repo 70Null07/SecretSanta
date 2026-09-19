@@ -21,7 +21,7 @@ namespace SecretSanta.ApiService.Controllers
                 return Unauthorized();
 
             if (string.IsNullOrWhiteSpace(req.Name))
-                return BadRequest("Name is required");
+                return this.ApiError(StatusCodes.Status400BadRequest, "name_required");
 
             var game = new Game { Name = req.Name, CreatorId = userId, GiftCost = req.GiftCost };
             _db.Games.Add(game);
@@ -111,7 +111,7 @@ namespace SecretSanta.ApiService.Controllers
                 .FirstOrDefaultAsync(i => i.Token == inviteToken);
 
             if (invite == null)
-                return NotFound("Приглашение не найдено");
+                return this.ApiError(StatusCodes.Status404NotFound, "invite_not_found");
 
             // Проверяем, что пользователь ещё не участвует
             bool alreadyJoined = invite.Game.UserGames.Any(ug => ug.UserId == userId);
@@ -135,7 +135,7 @@ namespace SecretSanta.ApiService.Controllers
                 return Unauthorized();
 
             var game = await _db.Games.FindAsync(gameId);
-            if (game == null) return NotFound();
+            if (game == null) return this.ApiError(StatusCodes.Status404NotFound, "game_not_found");
 
             if (game.CreatorId != userId)
                 return Forbid();
@@ -162,7 +162,7 @@ namespace SecretSanta.ApiService.Controllers
                     _db.Entry(invite).State = EntityState.Detached;
                     invite = await _db.GameInvites.FirstOrDefaultAsync(i => i.GameId == gameId);
                     if (invite == null)
-                        return Conflict("Не удалось создать приглашение");
+                        return this.ApiError(StatusCodes.Status409Conflict, "invite_creation_failed");
                 }
             }
 

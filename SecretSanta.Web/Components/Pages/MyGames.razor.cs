@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using SecretSanta.Web.Models;
+using SecretSanta.Web.Localization;
 
 namespace SecretSanta.Web.Components.Pages;
 
@@ -64,7 +65,7 @@ public partial class MyGames
             }
             else
             {
-                await ShowAlertAsync("Для присоединения к игре необходимо войти или зарегистрироваться");
+                await ShowAlertAsync(Localizer["JoinRequiresSignIn"]);
             }
         }
 
@@ -115,7 +116,7 @@ public partial class MyGames
 
         if (!response.IsSuccessStatusCode)
         {
-            await ShowResponseErrorAsync(response, "Возникла ошибка");
+            await ShowResponseErrorAsync(response);
             return;
         }
 
@@ -136,7 +137,7 @@ public partial class MyGames
 
         if (!response.IsSuccessStatusCode)
         {
-            await ShowResponseErrorAsync(response, "Возникла ошибка");
+            await ShowResponseErrorAsync(response);
             return;
         }
 
@@ -170,7 +171,7 @@ public partial class MyGames
 
         if (!response.IsSuccessStatusCode)
         {
-            await ShowResponseErrorAsync(response, "Ошибка создания игры");
+            await ShowResponseErrorAsync(response);
             return;
         }
 
@@ -230,7 +231,7 @@ public partial class MyGames
 
         if (!response.IsSuccessStatusCode)
         {
-            await ShowResponseErrorAsync(response, "Возникла ошибка при начале жеребьевки");
+            await ShowResponseErrorAsync(response);
             return;
         }
 
@@ -250,7 +251,7 @@ public partial class MyGames
             .PostAsync($"api/games/{selectedGame.GameId}/invite", null);
         if (!response.IsSuccessStatusCode)
         {
-            await ShowResponseErrorAsync(response, "Не удалось создать приглашение");
+            await ShowResponseErrorAsync(response);
             return;
         }
 
@@ -258,7 +259,7 @@ public partial class MyGames
         if (result is not null)
         {
             var inviteLink = NavigationManager.GetUriWithQueryParameter("inviteToken", result.InviteToken);
-            await ShowAlertAsync($"Ссылка для приглашения участников: {inviteLink}");
+            await ShowAlertAsync(Localizer["InvitationLink", inviteLink]);
         }
     }
 
@@ -269,19 +270,19 @@ public partial class MyGames
             var response = await CreateAuthorizedClient().PostAsync($"api/games/join/{inviteToken}", null);
             if (!response.IsSuccessStatusCode)
             {
-                await ShowResponseErrorAsync(response, "Не удалось присоединиться к игре");
+                await ShowResponseErrorAsync(response);
             }
         }
         catch (HttpRequestException)
         {
-            await ShowAlertAsync("Не удалось присоединиться к игре. Проверьте подключение и повторите попытку.");
+            await ShowAlertAsync($"{Localizer["JoinGameError"]} {Localizer["ConnectionError"]}");
         }
     }
 
-    private async Task ShowResponseErrorAsync(HttpResponseMessage response, string message)
+    private async Task ShowResponseErrorAsync(HttpResponseMessage response)
     {
-        var details = await response.Content.ReadAsStringAsync();
-        await ShowAlertAsync($"{message}: {details}");
+        var code = await ApiErrorReader.ReadCodeAsync(response);
+        await ShowAlertAsync(Localizer[code]);
     }
 
     private async Task ShowAlertAsync(string message)

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="AppName" xml:space="preserve"><value>🎅 Secret Santa</value></data>
+  <data name="Home" xml:space="preserve"><value>Home</value></data>
+  <data name="MyGames" xml:space="preserve"><value>My games</value></data>
+  <data name="SignIn" xml:space="preserve"><value>Sign in</value></data>
+  <data name="SignOut" xml:space="preserve"><value>Sign out</value></data>
+  <data name="AuthTitle" xml:space="preserve"><value>Sign in / Register</value></data>
+  <data name="Login" xml:space="preserve"><value>Login:</value></data>
+  <data name="Password" xml:space="preserve"><value>Password:</value></data>
+  <data name="Register" xml:space="preserve"><value>Register</value></data>
+  <data name="Language" xml:space="preserve"><value>Language</value></data>
+  <data name="Russian" xml:space="preserve"><value>Russian</value></data>
+  <data name="English" xml:space="preserve"><value>English</value></data>
+  <data name="HeroTitle" xml:space="preserve"><value>🎅 Secret Santa is more than a game — it is winter magic! ❄️</value></data>
+  <data name="HeroSubtitle" xml:space="preserve"><value>Share joy, surprises, and warm memories with friends!</value></data>
+  <data name="FaqTitle" xml:space="preserve"><value>Frequently asked questions</value></data>
+  <data name="FaqJoinQ" xml:space="preserve"><value>How do I join a game?</value></data>
+  <data name="FaqJoinA" xml:space="preserve"><value>Register and select a game from the list, or create a new one.</value></data>
+  <data name="FaqAnonymousQ" xml:space="preserve"><value>Can I participate anonymously?</value></data>
+  <data name="FaqAnonymousA" xml:space="preserve"><value>Yes. You will receive a guest code and can join without registering.</value></data>
+  <data name="FaqDrawQ" xml:space="preserve"><value>How does the draw work?</value></data>
+  <data name="FaqDrawA" xml:space="preserve"><value>Each participant is randomly assigned someone to surprise.</value></data>
+  <data name="Loading" xml:space="preserve"><value>Loading...</value></data>
+  <data name="SignInToSeeGames" xml:space="preserve"><value>Please sign in to see your games.</value></data>
+  <data name="NoGames" xml:space="preserve"><value>You do not have any games yet.</value></data>
+  <data name="ParticipantCountOne" xml:space="preserve"><value>{0} participant</value></data>
+  <data name="ParticipantCountFew" xml:space="preserve"><value>{0} participants</value></data>
+  <data name="ParticipantCountMany" xml:space="preserve"><value>{0} participants</value></data>
+  <data name="GiftCost" xml:space="preserve"><value>gift up to {0:N0}</value></data>
+  <data name="DrawCompletedParenthetical" xml:space="preserve"><value>(Draw completed)</value></data>
+  <data name="Creator" xml:space="preserve"><value>Creator</value></data>
+  <data name="Participant" xml:space="preserve"><value>Participant</value></data>
+  <data name="CreateGame" xml:space="preserve"><value>Create game</value></data>
+  <data name="CreateNewGame" xml:space="preserve"><value>Create a new game</value></data>
+  <data name="GameName" xml:space="preserve"><value>Game name:</value></data>
+  <data name="GiftCostUpTo" xml:space="preserve"><value>Gift value up to:</value></data>
+  <data name="Create" xml:space="preserve"><value>Create</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Participants" xml:space="preserve"><value>Participants:</value></data>
+  <data name="DrawStatus" xml:space="preserve"><value>Draw status: {0}</value></data>
+  <data name="Completed" xml:space="preserve"><value>Completed</value></data>
+  <data name="NotCompleted" xml:space="preserve"><value>Not completed</value></data>
+  <data name="WishesForSanta" xml:space="preserve"><value>Wishes for Santa</value></data>
+  <data name="Add" xml:space="preserve"><value>Add</value></data>
+  <data name="Recipient" xml:space="preserve"><value>Recipient: {0}</value></data>
+  <data name="MyWishes" xml:space="preserve"><value>My wishes</value></data>
+  <data name="GiftNamePlaceholder" xml:space="preserve"><value>Gift name</value></data>
+  <data name="DeliveryMethodPlaceholder" xml:space="preserve"><value>Delivery method</value></data>
+  <data name="InviteParticipants" xml:space="preserve"><value>Invite participants</value></data>
+  <data name="StartDraw" xml:space="preserve"><value>Start draw</value></data>
+  <data name="Close" xml:space="preserve"><value>Close</value></data>
+  <data name="JoinRequiresSignIn" xml:space="preserve"><value>Sign in or register to join the game.</value></data>
+  <data name="GenericError" xml:space="preserve"><value>Something went wrong.</value></data>
+  <data name="CreateGameError" xml:space="preserve"><value>Could not create the game.</value></data>
+  <data name="StartDrawError" xml:space="preserve"><value>Could not start the draw.</value></data>
+  <data name="CreateInviteError" xml:space="preserve"><value>Could not create an invitation.</value></data>
+  <data name="InvitationLink" xml:space="preserve"><value>Participant invitation link: {0}</value></data>
+  <data name="JoinGameError" xml:space="preserve"><value>Could not join the game.</value></data>
+  <data name="ConnectionError" xml:space="preserve"><value>Check your connection and try again.</value></data>
+  <data name="AuthError" xml:space="preserve"><value>Could not sign in or register.</value></data>
+  <data name="ErrorTitle" xml:space="preserve"><value>Error</value></data>
+  <data name="ErrorHeading" xml:space="preserve"><value>An error occurred.</value></data>
+  <data name="ErrorDescription" xml:space="preserve"><value>An error occurred while processing your request.</value></data>
+  <data name="RequestId" xml:space="preserve"><value>Request ID:</value></data>
+  <data name="DevelopmentMode" xml:space="preserve"><value>Development mode</value></data>
+  <data name="DevelopmentInfo" xml:space="preserve"><value>The Development environment displays detailed error information. Do not enable it in a deployed application.</value></data>
+  <data name="error_unknown" xml:space="preserve"><value>The request could not be completed.</value></data>
+  <data name="name_required" xml:space="preserve"><value>Enter a game name.</value></data>
+  <data name="game_not_found" xml:space="preserve"><value>Game not found.</value></data>
+  <data name="gift_not_found" xml:space="preserve"><value>Gift not found.</value></data>
+  <data name="invite_not_found" xml:space="preserve"><value>Invitation not found.</value></data>
+  <data name="invite_creation_failed" xml:space="preserve"><value>Could not create the invitation.</value></data>
+  <data name="name_taken" xml:space="preserve"><value>This name is already taken.</value></data>
+  <data name="email_taken" xml:space="preserve"><value>This email is already in use.</value></data>
+  <data name="identity_taken" xml:space="preserve"><value>The name or email is already in use.</value></data>
+  <data name="invalid_credentials" xml:space="preserve"><value>Invalid login or password.</value></data>
+  <data name="game_already_drawn" xml:space="preserve"><value>The draw has already been completed.</value></data>
+  <data name="not_enough_participants" xml:space="preserve"><value>At least two participants are required for the draw.</value></data>
+  <data name="recipient_not_found" xml:space="preserve"><value>Recipient not found.</value></data>
+  <data name="validation_failed" xml:space="preserve"><value>Check the entered information.</value></data>
+  <data name="unauthorized" xml:space="preserve"><value>You need to sign in.</value></data>
+  <data name="forbidden" xml:space="preserve"><value>You do not have permission to perform this action.</value></data>
+  <data name="NavigationMenu" xml:space="preserve"><value>Navigation menu</value></data>
+</root>
