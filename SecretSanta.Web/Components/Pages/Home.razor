@@ -1,28 +1,9 @@
-﻿@page "/"
+@page "/"
 @using SecretSanta.Web.Localization
-@inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> Localizer
-
-<PageTitle>@Localizer["Home"]</PageTitle>
-<div class="hero">
-    <div class="snowblock"></div>
-    <div class="content">
-        <h2>@Localizer["HeroTitle"]</h2>
-        <p>@Localizer["HeroSubtitle"]</p>
-    </div>
-</div>
-
-<div class="container">
-    <h3 style="margin-top:20px">@Localizer["FaqTitle"]</h3>
-    <div class="faq-item">
-        <div class="faq-question"><strong>@Localizer["FaqJoinQ"]</strong></div>
-        <div class="faq-answer">@Localizer["FaqJoinA"]</div>
-    </div>
-    <div class="faq-item">
-        <div class="faq-question"><strong>@Localizer["FaqAnonymousQ"]</strong></div>
-        <div class="faq-answer">@Localizer["FaqAnonymousA"]</div>
-    </div>
-    <div class="faq-item">
-        <div class="faq-question"><strong>@Localizer["FaqDrawQ"]</strong></div>
-        <div class="faq-answer">@Localizer["FaqDrawA"]</div>
-    </div>
-</div>
+@inject IStringLocalizer<SharedResource> Localizer
+<PageTitle>@Localizer["AppName"]</PageTitle>
+<section class="home-hero"><div class="shell hero-grid"><div class="hero-copy"><p class="eyebrow">@Localizer["HeroEyebrow"]</p><h1>@Localizer["HeroTitle"]</h1><p class="hero-lead">@Localizer["HeroSubtitle"]</p><div class="hero-actions"><a class="btn btn-primary" href="/mygames?create=true">@Localizer["CreateGame"] <span aria-hidden="true">→</span></a><a class="btn btn-link" href="#how">@Localizer["HowItWorks"] <span aria-hidden="true">↓</span></a></div><div class="trust-line"><span>✓ @Localizer["PrivateGames"]</span><span>✓ @Localizer["NoOneDrawsSelf"]</span></div></div><div class="envelope-scene" aria-hidden="true"><div class="sprig"></div><div class="envelope"><div class="letter"><span class="letter-kicker">SECRET SANTA</span><strong>@Localizer["CardGreeting"]</strong><i></i><i></i><small>@Localizer["CardHint"]</small></div><div class="envelope-front"></div><div class="ribbon-v"></div><div class="seal">S</div></div></div></div></section>
+<section class="section steps-section" id="how"><div class="shell"><div class="section-heading"><p class="eyebrow">@Localizer["EverythingSimple"]</p><h2>@Localizer["ThreeStepsTitle"]</h2><p>@Localizer["ThreeStepsSubtitle"]</p></div><div class="steps"><article><span>01</span><div class="step-icon">＋</div><h3>@Localizer["StepCreateTitle"]</h3><p>@Localizer["StepCreateText"]</p></article><article><span>02</span><div class="step-icon">↗</div><h3>@Localizer["StepInviteTitle"]</h3><p>@Localizer["StepInviteText"]</p></article><article><span>03</span><div class="step-icon">✦</div><h3>@Localizer["StepDrawTitle"]</h3><p>@Localizer["StepDrawText"]</p></article></div></div></section>
+<section class="section"><div class="shell feature-panel"><div><p class="eyebrow">@Localizer["ThoughtfulGifts"]</p><h2>@Localizer["WishesTitle"]</h2><p>@Localizer["WishesText"]</p><ul class="check-list"><li>@Localizer["WishFeatureOne"]</li><li>@Localizer["WishFeatureTwo"]</li><li>@Localizer["WishFeatureThree"]</li></ul></div><div class="wish-preview"><span class="tape"></span><p>@Localizer["MyWishes"]</p><div><span>01</span><strong>@Localizer["WishExampleOne"]</strong></div><div><span>02</span><strong>@Localizer["WishExampleTwo"]</strong></div><div><span>03</span><strong>@Localizer["WishExampleThree"]</strong></div></div></div></section>
+<section class="section faq-section"><div class="shell faq-grid"><div><p class="eyebrow">FAQ</p><h2>@Localizer["FaqTitle"]</h2><p>@Localizer["FaqIntro"]</p></div><div class="faq-list"><details open><summary>@Localizer["FaqJoinQ"]</summary><p>@Localizer["FaqJoinA"]</p></details><details><summary>@Localizer["FaqAnonymousQ"]</summary><p>@Localizer["FaqAnonymousA"]</p></details><details><summary>@Localizer["FaqDrawQ"]</summary><p>@Localizer["FaqDrawA"]</p></details></div></div></section>
+<section class="cta-section"><div class="shell"><div class="cta-card"><span class="bow" aria-hidden="true"></span><p class="eyebrow">@Localizer["ReadyEyebrow"]</p><h2>@Localizer["ReadyTitle"]</h2><p>@Localizer["ReadyText"]</p><a class="btn btn-light" href="/mygames?create=true">@Localizer["CreateGame"] →</a></div></div></section>
