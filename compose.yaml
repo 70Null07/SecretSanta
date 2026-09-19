@@ -63,6 +63,11 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       Services__Api__BaseUrl: http://api:8080
+      DataProtection__KeysPath: /app/keys
+    volumes:
+      # Keep antiforgery and other protected payloads valid across container
+      # replacement. The image creates this directory for its non-root user.
+      - web_dataprotection:/app/keys
     ports:
       - "${WEB_PORT:-8080}:8080"
     depends_on:
@@ -78,3 +83,4 @@ services:
 
 volumes:
   postgres_data:
+  web_dataprotection:

@@ -51,11 +51,7 @@ services:
   web:
     image: ghcr.io/70null07/secretsanta-web:${APP_VERSION:?Set APP_VERSION}
     build: null
-    environment:
-      DataProtection__KeysPath: /app/keys
     networks: [frontend, backend]
-    volumes:
-      - web_dataprotection:/app/keys
     read_only: true
     tmpfs: [/tmp]
     security_opt: [no-new-privileges:true]
@@ -67,9 +63,6 @@ networks:
   frontend:
   backend:
     internal: true
-
-volumes:
-  web_dataprotection:
 
 secrets:
   postgres_password:

@@ -39,7 +39,9 @@ PostgreSQL and the API are available only on the internal Compose network.
 - `postgres`: PostgreSQL 18 with a readiness check and the `postgres_data` volume.
 - `migrate`: applies committed EF Core migrations and exits.
 - `api`: ASP.NET Core API; waits for successful migrations.
-- `web`: Blazor Server frontend and the only published application endpoint.
+- `web`: Blazor Server frontend and the only published application endpoint. Its
+  Data Protection key ring is stored in the `web_dataprotection` volume so that
+  antiforgery tokens and other protected data survive container replacement.
 
 Useful commands:
 
@@ -49,8 +51,10 @@ docker compose logs -f migrate api web
 docker compose down
 ```
 
-`docker compose down` keeps database data. `docker compose down -v` permanently
-deletes the named volume and all database data.
+`docker compose down` keeps database data and Data Protection keys. `docker
+compose down -v` permanently deletes both named volumes; browsers with cookies
+issued before the key volume was deleted may need to reload once to receive a
+new antiforgery token.
 
 ## Database migrations
 
@@ -175,12 +179,12 @@ docker compose -f compose.yaml -f compose.production.yaml ps
 ```
 
 Only Web is published on the host. API and PostgreSQL use the internal backend
-network. The production overlay uses a persistent Data Protection key volume,
-read-only application filesystems, dropped Linux capabilities, bounded Docker
-logs, and graceful shutdown periods. Until a domain is available, expose Web
-only on a trusted network or behind a VPN. Do not send credentials over public
-plain HTTP. Add an HTTPS reverse proxy and forwarded-header allow-list before
-public Internet exposure.
+network. The base Compose configuration uses a persistent Data Protection key
+volume; the production overlay adds read-only application filesystems, dropped
+Linux capabilities, bounded Docker logs, and graceful shutdown periods. Until a
+domain is available, expose Web only on a trusted network or behind a VPN. Do
+not send credentials over public plain HTTP. Add an HTTPS reverse proxy and
+forwarded-header allow-list before public Internet exposure.
 
 ### Secrets
 
