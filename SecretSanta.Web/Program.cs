@@ -42,6 +42,10 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
 
+// Keep the conventional static-file middleware as a fallback for framework assets.
+// Interactive components cannot start if _framework/blazor.web.js isn't served.
+app.UseStaticFiles();
+
 app.UseAntiforgery();
 
 app.UseOutputCache();
@@ -69,3 +73,5 @@ app.MapRazorComponents<App>()
 app.MapDefaultEndpoints();
 
 app.Run();
+
+public partial class Program;
